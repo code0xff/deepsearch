@@ -1,0 +1,431 @@
+/* Deepsearch — academic monotone report stylesheet.
+ * Typography: Roboto (body) · Roboto Slab (headings) · Roboto Mono (code) · Noto Sans KR (Korean).
+ * Palette: monotone grayscale; one hairline accent reserved for links and the top rule.
+ */
+
+:root {
+  --ink: #111111;
+  --ink-soft: #2b2b2b;
+  --muted: #6b6b6b;
+  --rule: #d0d0d0;
+  --rule-strong: #8a8a8a;
+  --paper: #fafafa;
+  --surface: #ffffff;
+  --link: #1a1a1a;
+  --link-underline: #8a8a8a;
+  --content-width: 720px;
+  --gutter: 1.5rem;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  font-size: 17px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Roboto", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 400;
+  line-height: 1.65;
+  letter-spacing: 0.005em;
+}
+
+/* ---------- Layout ---------- */
+
+.page {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  padding: 4rem var(--gutter) 6rem;
+}
+
+.masthead {
+  border-top: 2px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
+  padding: 2.5rem 0 2rem;
+  margin-bottom: 3rem;
+}
+
+.masthead .kicker {
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+
+.masthead h1 {
+  font-family: "Roboto Slab", "Noto Serif KR", Georgia, serif;
+  font-weight: 600;
+  font-size: 2.25rem;
+  line-height: 1.2;
+  margin: 0 0 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.masthead .subtitle {
+  font-family: "Roboto Slab", "Noto Serif KR", Georgia, serif;
+  font-weight: 300;
+  font-style: italic;
+  font-size: 1.2rem;
+  color: var(--ink-soft);
+  margin: 0 0 1.5rem;
+}
+
+.masthead .meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+}
+
+.masthead .meta span strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ---------- Headings ---------- */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Roboto Slab", "Noto Serif KR", Georgia, serif;
+  color: var(--ink);
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin: 3rem 0 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+h3 {
+  font-size: 1.15rem;
+  margin: 2.2rem 0 0.75rem;
+}
+
+h4 {
+  font-size: 1rem;
+  margin: 1.8rem 0 0.5rem;
+  font-weight: 500;
+  font-style: italic;
+}
+
+/* ---------- Body text ---------- */
+
+p {
+  margin: 0 0 1.1rem;
+  hyphens: auto;
+}
+
+a {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-color: var(--link-underline);
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  text-decoration-color: var(--ink);
+}
+
+strong { font-weight: 600; }
+em { font-style: italic; }
+small { font-size: 0.85em; color: var(--muted); }
+
+ul, ol {
+  margin: 0 0 1.1rem;
+  padding-left: 1.5rem;
+}
+
+li { margin-bottom: 0.3rem; }
+
+blockquote {
+  margin: 1.5rem 0;
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  border-left: 3px solid var(--rule-strong);
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 2.5rem 0;
+}
+
+/* ---------- Abstract ---------- */
+
+.abstract {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  padding: 1.5rem 1.75rem;
+  margin: 0 0 3rem;
+  font-size: 0.97rem;
+  line-height: 1.65;
+}
+
+.abstract h2 {
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 0;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  font-family: "Roboto", sans-serif;
+  font-weight: 500;
+}
+
+.abstract p:last-child { margin-bottom: 0; }
+
+/* ---------- Code ---------- */
+
+code, pre, kbd, samp {
+  font-family: "Roboto Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.9em;
+}
+
+p code, li code {
+  background: #ececec;
+  padding: 0.1em 0.35em;
+  border-radius: 2px;
+}
+
+pre {
+  background: #f2f2f2;
+  border: 1px solid var(--rule);
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  line-height: 1.55;
+  margin: 1.25rem 0;
+}
+
+pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.88em;
+}
+
+/* ---------- Tables ---------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.93rem;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+
+th {
+  font-weight: 500;
+  border-bottom: 2px solid var(--rule-strong);
+  font-family: "Roboto Slab", serif;
+}
+
+/* ---------- Figures ---------- */
+
+figure {
+  margin: 2rem 0;
+}
+
+figure img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border: 1px solid var(--rule);
+}
+
+figcaption {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* ---------- Footnotes / citations ---------- */
+
+sup.footnote-ref a,
+a.footnote-ref {
+  font-size: 0.75em;
+  text-decoration: none;
+  color: var(--muted);
+  padding: 0 0.1em;
+}
+
+sup.footnote-ref a:hover,
+a.footnote-ref:hover {
+  color: var(--ink);
+}
+
+.footnotes, .references {
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.footnotes h2, .references h2 {
+  font-size: 0.82rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border: 0;
+  padding: 0;
+  margin: 0 0 1rem;
+  font-family: "Roboto", sans-serif;
+  font-weight: 500;
+}
+
+.footnotes ol, .references ol {
+  padding-left: 1.5rem;
+}
+
+.footnotes li, .references li {
+  margin-bottom: 0.6rem;
+  line-height: 1.5;
+}
+
+.references li .venue {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.references li .accessed {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+/* ---------- Callouts ---------- */
+
+.callout {
+  border: 1px solid var(--rule);
+  border-left: 3px solid var(--ink);
+  padding: 0.9rem 1.1rem;
+  margin: 1.5rem 0;
+  font-size: 0.93rem;
+  background: var(--surface);
+}
+
+.callout .label {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+}
+
+.unverified {
+  color: var(--muted);
+  font-size: 0.85em;
+}
+
+/* ---------- Root index page (report listing) ---------- */
+
+.index-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.index-list li {
+  border-bottom: 1px solid var(--rule);
+  padding: 1.25rem 0;
+  margin: 0;
+}
+
+.index-list li:last-child { border-bottom: 0; }
+
+.index-list .entry-date {
+  font-size: 0.78rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.3rem;
+}
+
+.index-list .entry-title {
+  font-family: "Roboto Slab", "Noto Serif KR", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 0 0 0.3rem;
+}
+
+.index-list .entry-title a {
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.index-list .entry-title a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--rule-strong);
+}
+
+.index-list .entry-subtitle {
+  color: var(--ink-soft);
+  font-style: italic;
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.index-list .entry-tags {
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  max-width: var(--content-width);
+  margin: 6rem auto 2rem;
+  padding: 1.5rem var(--gutter) 0;
+  border-top: 1px solid var(--rule);
+  font-size: 0.8rem;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ---------- Print ---------- */
+
+@media print {
+  :root { --content-width: 100%; }
+  body { background: #fff; font-size: 11pt; }
+  .page { padding: 0; }
+  a { color: var(--ink); text-decoration: none; }
+  .footnotes, .references { font-size: 9pt; }
+  pre { page-break-inside: avoid; }
+  h2, h3 { page-break-after: avoid; }
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 640px) {
+  html { font-size: 16px; }
+  .page { padding: 2.5rem var(--gutter) 4rem; }
+  .masthead h1 { font-size: 1.75rem; }
+  .masthead .subtitle { font-size: 1.05rem; }
+}
