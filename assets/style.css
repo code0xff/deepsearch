@@ -1,5 +1,5 @@
 /* Deepsearch — academic monotone report stylesheet.
- * Typography: Roboto (body) · Roboto Slab (headings) · Roboto Mono (code) · Noto Sans KR (Korean).
+ * Typography: Pretendard for interface and prose; system monospace for code.
  * Palette: monotone grayscale; one hairline accent reserved for links and the top rule.
  */
 
@@ -31,7 +31,7 @@ body {
   padding: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: "Roboto", "Noto Sans KR", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-weight: 400;
   line-height: 1.65;
   letter-spacing: 0.005em;
@@ -61,7 +61,7 @@ body {
 }
 
 .masthead h1 {
-  font-family: "Roboto Slab", "Noto Serif KR", Georgia, serif;
+  font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-weight: 600;
   font-size: 2.25rem;
   line-height: 1.2;
@@ -70,9 +70,8 @@ body {
 }
 
 .masthead .subtitle {
-  font-family: "Roboto Slab", "Noto Serif KR", Georgia, serif;
-  font-weight: 300;
-  font-style: italic;
+  font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-weight: 400;
   font-size: 1.2rem;
   color: var(--ink-soft);
   margin: 0 0 1.5rem;
@@ -94,7 +93,7 @@ body {
 /* ---------- Headings ---------- */
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: "Roboto Slab", "Noto Serif KR", Georgia, serif;
+  font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
   color: var(--ink);
   font-weight: 600;
   line-height: 1.25;
@@ -185,7 +184,7 @@ hr {
   border: 0;
   margin: 0 0 0.75rem;
   padding: 0;
-  font-family: "Roboto", sans-serif;
+  font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-weight: 500;
 }
 
@@ -194,7 +193,7 @@ hr {
 /* ---------- Code ---------- */
 
 code, pre, kbd, samp {
-  font-family: "Roboto Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
   font-size: 0.9em;
 }
 
@@ -238,7 +237,7 @@ th, td {
 th {
   font-weight: 500;
   border-bottom: 2px solid var(--rule-strong);
-  font-family: "Roboto Slab", serif;
+  font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 /* ---------- Figures ---------- */
@@ -294,7 +293,7 @@ a.footnote-ref:hover {
   border: 0;
   padding: 0;
   margin: 0 0 1rem;
-  font-family: "Roboto", sans-serif;
+  font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-weight: 500;
 }
 
@@ -367,7 +366,7 @@ a.footnote-ref:hover {
 }
 
 .index-list .entry-title {
-  font-family: "Roboto Slab", "Noto Serif KR", Georgia, serif;
+  font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 1.2rem;
   font-weight: 500;
   margin: 0 0 0.3rem;

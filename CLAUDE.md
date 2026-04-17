@@ -90,7 +90,7 @@ The outline can deviate when the topic demands, but the Abstract, Limitations, a
 ## 7. Tone and visual constraints (enforced in CSS)
 
 - Monotone grayscale. No accent colors beyond one hairline rule and one subtle link color.
-- Fonts: Roboto (body), Roboto Slab (headings), Roboto Mono (code), Noto Sans KR for Korean. All served from Google Fonts.
+- Fonts: Pretendard for body and headings, system monospace for code. Pretendard is served from CDN.
 - Single column. Max content width ~720px. Generous line-height. Serif-like heading / sans body contrast.
 
 ## 8. Prompt injection defence
