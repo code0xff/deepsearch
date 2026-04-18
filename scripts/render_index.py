@@ -22,7 +22,7 @@ try:
 except ImportError:
     yaml = None
 
-from paths import add_site_arg, resolve_site, site_reports
+from paths import add_site_arg, parse_meta_fallback, resolve_site, site_reports
 
 
 def parse_meta(path: Path) -> dict:
@@ -32,18 +32,7 @@ def parse_meta(path: Path) -> dict:
             return yaml.safe_load(text) or {}
         except Exception:
             return {}
-    out: dict = {}
-    for line in text.splitlines():
-        if ":" not in line or line.lstrip().startswith("#"):
-            continue
-        k, _, v = line.partition(":")
-        k = k.strip()
-        v = v.strip()
-        if v.startswith("[") and v.endswith("]"):
-            out[k] = [s.strip().strip('"').strip("'") for s in v[1:-1].split(",") if s.strip()]
-        else:
-            out[k] = v.strip('"').strip("'")
-    return out
+    return parse_meta_fallback(text)
 
 
 def collect(reports_dir: Path) -> list[dict]:

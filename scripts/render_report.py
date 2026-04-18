@@ -26,7 +26,7 @@ try:
 except ImportError:
     yaml = None  # Fallback parser below.
 
-from paths import REPO, add_site_arg, resolve_site, site_reports
+from paths import REPO, add_site_arg, parse_meta_fallback, resolve_site, site_reports
 
 TEMPLATE = REPO / "assets" / "report-template.html"
 
@@ -35,23 +35,7 @@ def load_meta(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
     if yaml is not None:
         return yaml.safe_load(text) or {}
-    # Minimal fallback: key: value per line, no nesting, list only via [a, b].
-    out: dict = {}
-    for line in text.splitlines():
-        line = line.rstrip()
-        if not line or line.lstrip().startswith("#"):
-            continue
-        if ":" not in line:
-            continue
-        k, _, v = line.partition(":")
-        k = k.strip()
-        v = v.strip()
-        if v.startswith("[") and v.endswith("]"):
-            inner = v[1:-1].strip()
-            out[k] = [s.strip().strip('"').strip("'") for s in inner.split(",") if s.strip()]
-        else:
-            out[k] = v.strip().strip('"').strip("'")
-    return out
+    return parse_meta_fallback(text)
 
 
 def load_sources(path: Path) -> dict[str, dict]:

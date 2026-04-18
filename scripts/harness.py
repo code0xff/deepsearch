@@ -16,7 +16,7 @@ try:
 except ImportError:
     yaml = None
 
-from paths import REPO, RESERVED_SLUGS, add_site_arg, resolve_site, site_reports
+from paths import REPO, RESERVED_SLUGS, add_site_arg, parse_meta_fallback, resolve_site, site_reports
 from render_index import render_index
 from render_report import render_report
 
@@ -34,20 +34,7 @@ def load_yaml(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
     if yaml is not None:
         return yaml.safe_load(text) or {}
-    out: dict = {}
-    for line in text.splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or ":" not in line:
-            continue
-        key, _, value = line.partition(":")
-        key = key.strip()
-        value = value.strip()
-        if value.startswith("[") and value.endswith("]"):
-            inner = value[1:-1].strip()
-            out[key] = [s.strip().strip('"').strip("'") for s in inner.split(",") if s.strip()]
-        else:
-            out[key] = value.strip('"').strip("'")
-    return out
+    return parse_meta_fallback(text)
 
 
 def dump_yaml(data: dict) -> str:
