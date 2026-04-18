@@ -90,6 +90,33 @@ body {
   font-weight: 500;
 }
 
+.report-actions {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.download-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink);
+  background: var(--surface);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.download-link:hover {
+  background: #f3f3f3;
+  text-decoration: none;
+}
+
 /* ---------- Headings ---------- */
 
 h1, h2, h3, h4, h5, h6 {
@@ -417,6 +444,7 @@ a.footnote-ref:hover {
   body { background: #fff; font-size: 11pt; }
   .page { padding: 0; }
   a { color: var(--ink); text-decoration: none; }
+  .report-actions { display: none; }
   .footnotes, .references { font-size: 9pt; }
   pre { page-break-inside: avoid; }
   h2, h3 { page-break-after: avoid; }
@@ -429,4 +457,6 @@ a.footnote-ref:hover {
   .page { padding: 2.5rem var(--gutter) 4rem; }
   .masthead h1 { font-size: 1.75rem; }
   .masthead .subtitle { font-size: 1.05rem; }
+  .report-actions { margin-top: 1rem; }
+  .download-link { width: 100%; justify-content: center; }
 }

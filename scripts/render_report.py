@@ -242,6 +242,7 @@ def main() -> int:
     meta = load_meta(report_dir / "meta.yaml")
     draft = (report_dir / "draft.md").read_text(encoding="utf-8")
     sources = load_sources(report_dir / "working" / "sources.jsonl")
+    slug = str(meta.get("slug") or args.slug)
 
     abstract_md, body_md = split_abstract(draft)
     abstract_html_raw = try_markdown(abstract_md) if abstract_md else "<p><em>No abstract provided.</em></p>"
@@ -270,6 +271,7 @@ def main() -> int:
         "DATE": html.escape(str(meta.get("date") or "")),
         "TAGS": html.escape(tags_text),
         "STATUS": html.escape(str(meta.get("status") or "draft")),
+        "DOWNLOAD_FILENAME": html.escape(f"{slug}.html"),
         "ABSTRACT_HTML": abstract_html,
         "BODY_HTML": body_html,
         "REFERENCES_HTML": references_html,
