@@ -45,6 +45,27 @@ body {
   padding: 4rem var(--gutter) 6rem;
 }
 
+.report-nav {
+  margin-bottom: 1rem;
+}
+
+.report-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.report-back-link:hover {
+  color: var(--ink);
+  text-decoration: none;
+}
+
 .masthead {
   border-top: 2px solid var(--ink);
   border-bottom: 1px solid var(--rule);
@@ -90,21 +111,22 @@ body {
   font-weight: 500;
 }
 
-.report-actions {
+.report-download {
   margin-top: 1.25rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
 }
 
-.report-action-link {
+.report-download-link {
   display: inline-flex;
   align-items: center;
   min-height: 2.25rem;
-  padding: 0.45rem 0.85rem;
-  border: 1px solid var(--rule-strong);
-  color: var(--ink);
-  background: var(--surface);
+  justify-content: center;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--ink);
+  color: var(--surface);
+  background: var(--ink);
   text-decoration: none;
   font-size: 0.8rem;
   font-weight: 500;
@@ -112,8 +134,9 @@ body {
   text-transform: uppercase;
 }
 
-.report-action-link:hover {
-  background: #f3f3f3;
+.report-download-link:hover {
+  background: #2b2b2b;
+  border-color: #2b2b2b;
   text-decoration: none;
 }
 
@@ -444,7 +467,7 @@ a.footnote-ref:hover {
   body { background: #fff; font-size: 11pt; }
   .page { padding: 0; }
   a { color: var(--ink); text-decoration: none; }
-  .report-actions { display: none; }
+  .report-nav, .report-download { display: none; }
   .footnotes, .references { font-size: 9pt; }
   pre { page-break-inside: avoid; }
   h2, h3 { page-break-after: avoid; }
@@ -455,8 +478,9 @@ a.footnote-ref:hover {
 @media (max-width: 640px) {
   html { font-size: 16px; }
   .page { padding: 2.5rem var(--gutter) 4rem; }
+  .report-nav { margin-bottom: 0.85rem; }
   .masthead h1 { font-size: 1.75rem; }
   .masthead .subtitle { font-size: 1.05rem; }
-  .report-actions { margin-top: 1rem; }
-  .report-action-link { width: 100%; justify-content: center; }
+  .report-download { margin-top: 1rem; }
+  .report-download-link { width: 100%; }
 }
