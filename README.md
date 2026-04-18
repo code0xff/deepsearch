@@ -43,7 +43,7 @@ CLAUDE.md                 Research protocol — read first. Invariants live here
 index.html                Auto-generated listing of all published reports.
 .nojekyll                 Prevents GitHub Pages from running Jekyll.
 assets/
-  style.css               Monotone academic stylesheet (Pretendard + system monospace).
+  style.css               Monotone academic stylesheet (Pretendard + JetBrains Mono).
   report-template.html    HTML skeleton every report is rendered into.
 reports/<slug>/
   meta.yaml               Title, slug, lang, date, tags, status.

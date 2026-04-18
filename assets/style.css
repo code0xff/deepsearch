@@ -1,5 +1,5 @@
 /* Deepsearch — academic monotone report stylesheet.
- * Typography: Pretendard for interface and prose; system monospace for code.
+ * Typography: Pretendard for interface and prose; JetBrains Mono for code.
  * Palette: monotone grayscale; one hairline accent reserved for links and the top rule.
  */
 
@@ -193,7 +193,7 @@ hr {
 /* ---------- Code ---------- */
 
 code, pre, kbd, samp {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
   font-size: 0.9em;
 }
 
