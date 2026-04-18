@@ -122,7 +122,7 @@ def render_item(m: dict) -> str:
     return "\n".join(p for p in parts if p)
 
 
-def main() -> int:
+def render_index() -> Path:
     entries = collect()
     items_html = "\n".join(render_item(m) for m in entries) or '      <li><em>No reports published yet.</em></li>'
     updated = entries[0].get("date") if entries else "—"
@@ -134,6 +134,11 @@ def main() -> int:
     )
     OUT.write_text(out, encoding="utf-8")
     print(f"wrote {OUT} ({len(entries)} entries)")
+    return OUT
+
+
+def main() -> int:
+    render_index()
     return 0
 
 

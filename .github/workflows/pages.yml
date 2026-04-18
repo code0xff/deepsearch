@@ -32,7 +32,7 @@ jobs:
           pip install pyyaml markdown
 
       - name: Regenerate root index
-        run: python3 scripts/render_index.py
+        run: python3 scripts/harness.py render-index
 
       - name: Re-render all reports (defensive)
         run: |
@@ -41,7 +41,7 @@ jobs:
             [ -f "$d/meta.yaml" ] || continue
             [ -f "$d/draft.md" ] || continue
             slug="$(basename "$d")"
-            python3 scripts/render_report.py "$slug"
+            python3 scripts/harness.py render-report "$slug"
           done
 
       - name: Stage site artefact

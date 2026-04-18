@@ -229,20 +229,16 @@ def replace_template(template: str, values: dict[str, str]) -> str:
     return template
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("slug")
-    args = ap.parse_args()
-
-    report_dir = REPO / "reports" / args.slug
+def render_report(slug: str) -> Path:
+    report_dir = REPO / "reports" / slug
     if not report_dir.is_dir():
         print(f"error: {report_dir} does not exist", file=sys.stderr)
-        return 2
+        raise SystemExit(2)
 
     meta = load_meta(report_dir / "meta.yaml")
     draft = (report_dir / "draft.md").read_text(encoding="utf-8")
     sources = load_sources(report_dir / "working" / "sources.jsonl")
-    slug = str(meta.get("slug") or args.slug)
+    slug = str(meta.get("slug") or slug)
 
     abstract_md, body_md = split_abstract(draft)
     abstract_html_raw = try_markdown(abstract_md) if abstract_md else "<p><em>No abstract provided.</em></p>"
@@ -265,9 +261,9 @@ def main() -> int:
     template = TEMPLATE.read_text(encoding="utf-8")
     rendered = replace_template(template, {
         "LANG": str(meta.get("lang") or "en"),
-        "TITLE": html.escape(str(meta.get("title") or args.slug)),
+        "TITLE": html.escape(str(meta.get("title") or slug)),
         "SUBTITLE": html.escape(str(meta.get("subtitle") or "")),
-        "DESCRIPTION": html.escape(str(meta.get("subtitle") or meta.get("title") or args.slug)),
+        "DESCRIPTION": html.escape(str(meta.get("subtitle") or meta.get("title") or slug)),
         "DATE": html.escape(str(meta.get("date") or "")),
         "TAGS": html.escape(tags_text),
         "STATUS": html.escape(str(meta.get("status") or "draft")),
@@ -277,8 +273,17 @@ def main() -> int:
         "REFERENCES_HTML": references_html,
     })
 
-    (report_dir / "index.html").write_text(rendered, encoding="utf-8")
-    print(f"wrote {report_dir / 'index.html'} ({len(order)} citations)")
+    out_path = report_dir / "index.html"
+    out_path.write_text(rendered, encoding="utf-8")
+    print(f"wrote {out_path} ({len(order)} citations)")
+    return out_path
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("slug")
+    args = ap.parse_args()
+    render_report(args.slug)
     return 0
 
 

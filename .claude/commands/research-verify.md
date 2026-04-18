@@ -3,7 +3,7 @@ description: Self-critique pass — audit the draft for unsupported claims, weak
 argument-hint: <slug>
 ---
 
-You are running the **verification lane** on `reports/$ARGUMENTS`. This is an adversarial pass: assume the draft is wrong and try to prove it.
+You are running the **verification lane** on `reports/$ARGUMENTS`. This is an adversarial pass: assume the draft is wrong and try to prove it. Follow `PROTOCOL.md` for the shared publish and critique invariants.
 
 Produce `working/critique.md` with sections:
 
@@ -35,3 +35,9 @@ For each major finding, actively search for dissenting views via one more `/rese
 Classify each finding as **must-fix** or **nit**. The report does not ship with any must-fix open.
 
 After producing `critique.md`, briefly summarise the count (must-fix / nits) to the user, then revise `draft.md` accordingly. Re-run this command after revision until no must-fix remain.
+
+Before handing off to publish, run:
+
+```bash
+python3 scripts/harness.py validate-report <slug>
+```

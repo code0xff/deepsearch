@@ -3,7 +3,7 @@ description: Orchestrate a full deep-research run for a topic, producing an HTML
 argument-hint: <topic in natural language>
 ---
 
-You are running the main research loop for this repository. Re-read `CLAUDE.md` before starting — §2, §3, §8 are invariants. Do not skip phases.
+You are running the main research loop for this repository. Re-read `PROTOCOL.md` before starting. `CLAUDE.md` is the Claude adapter; `PROTOCOL.md` is the source of truth for the phases and invariants. Do not skip phases.
 
 The topic is: **$ARGUMENTS**
 
@@ -11,16 +11,11 @@ The topic is: **$ARGUMENTS**
 
 1. Derive a URL-safe slug from the topic (lowercase, hyphens, ≤ 40 chars).
 2. If `reports/<slug>/` already exists, stop and ask the user whether to resume, overwrite, or pick a new slug. When resuming, reload `meta.yaml`, `working/outline.md`, `working/claims.md`, `working/sources.jsonl`, `working/gaps.md` and continue from the earliest unfinished phase.
-3. Otherwise create `reports/<slug>/working/`, seed `meta.yaml`:
-   ```yaml
-   title: <one-sentence title — not the raw topic>
-   subtitle: <one short clarifying line>
-   slug: <slug>
-   lang: <ko|en — match the topic's language>
-   date: <today, YYYY-MM-DD>
-   tags: []
-   status: drafting
+3. Otherwise initialize the scaffold with:
+   ```bash
+   python3 scripts/harness.py init-report "<topic>"
    ```
+   If you need to override the generated slug or language, rerun with `--slug` / `--lang`.
 4. State the plan to the user (slug, language, expected sections) in ≤ 3 sentences and proceed.
 
 ## Phase 1 — Frame (outline)
@@ -76,7 +71,7 @@ Run `/research-verify` on this report. It writes `working/critique.md` and flags
 
 ## Phase 7 — Publish
 
-Run `/research-publish <slug>`. It renders HTML, regenerates the root index, stages, and shows the user the diff before committing. The user confirms; then commit and push. GitHub Actions deploys.
+Run `/research-publish <slug>`. It should use `python3 scripts/harness.py validate-report`, `render-report`, `render-index`, and `prepublish-check` before staging, then show the user the diff before committing. The user confirms; then commit and push. GitHub Actions deploys.
 
 ## Execution discipline
 

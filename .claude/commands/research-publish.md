@@ -3,27 +3,26 @@ description: Render the draft to HTML, regenerate the root index, show the diff,
 argument-hint: <slug>
 ---
 
-You are publishing `reports/$ARGUMENTS`. Do not commit without showing the user the diff first.
+You are publishing `reports/$ARGUMENTS`. Follow `PROTOCOL.md`. Do not commit without showing the user the diff first.
 
 Steps:
 
-1. **Preconditions** — confirm:
-   - `working/critique.md` exists and has no **must-fix** items
-   - `meta.yaml` has `status: ready` (set it if you just finished the critique loop)
-   - `draft.md` exists and is non-empty
-   - `sources.jsonl` exists and every `[^s..]` ref used in the draft resolves to a line in it
-
-   If any precondition fails, stop and report to the user.
+1. **Preconditions** — run:
+   ```bash
+   python3 scripts/harness.py validate-report <slug>
+   python3 scripts/harness.py prepublish-check <slug>
+   ```
+   If either command fails, stop and report the errors to the user.
 
 2. **Render the report**:
    ```bash
-   python3 scripts/render_report.py <slug>
+   python3 scripts/harness.py render-report <slug>
    ```
    This reads `reports/<slug>/{meta.yaml,draft.md,working/sources.jsonl}` and writes `reports/<slug>/index.html` from `assets/report-template.html`.
 
 3. **Regenerate the root index**:
    ```bash
-   python3 scripts/render_index.py
+   python3 scripts/harness.py render-index
    ```
    This scans every `reports/*/meta.yaml` (excluding `status: drafting`) and writes the repository root `index.html`.
 
