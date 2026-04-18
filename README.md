@@ -13,7 +13,7 @@ deepsearch (this repo)                     reports (site repo)
 ├── PROTOCOL.md, CLAUDE.md, README.md      ├── index.html           (generated)
 ├── agents/, .claude/commands/             ├── .nojekyll
 ├── scripts/                               ├── assets/style.css
-│   ├── harness.py                         ├── reports/<slug>/
+│   ├── harness.py                         ├── <slug>/
 │   ├── render_report.py                   │     ├── index.html     (rendered)
 │   ├── render_index.py                    │     ├── meta.yaml
 │   ├── paths.py                           │     ├── draft.md
@@ -44,7 +44,7 @@ The harness writes every report artefact into the site repo's checkout and never
 
 ```bash
 python3 scripts/harness.py init-report "your topic here"
-#  → creates $DEEPSEARCH_SITE/reports/<slug>/ scaffold
+#  → creates $DEEPSEARCH_SITE/<slug>/ scaffold
 python3 scripts/harness.py validate-report <slug>
 python3 scripts/harness.py render-report  <slug>
 python3 scripts/harness.py render-index
@@ -55,7 +55,7 @@ Draft writing, source gathering, and critique happen directly in the site repo's
 
 ```bash
 cd "$DEEPSEARCH_SITE"
-git add reports/<slug>/ index.html
+git add <slug>/ index.html
 git commit -m "report: <slug> — <title>"
 git push
 ```

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Regenerate the site repo's root index.html by scanning reports/*/meta.yaml.
+"""Regenerate the site repo's root index.html by scanning <site>/*/meta.yaml.
 
 Only reports whose meta.yaml `status` is `ready` or `published` are listed.
 Draft reports are skipped. Sorted by `date` descending, then by slug.
 
 The site repo location is resolved via ``paths.resolve_site`` (CLI ``--site``,
-``DEEPSEARCH_SITE`` env, or the default ``../reports``).
+``DEEPSEARCH_SITE`` env, or the default ``../reports``). Report directories
+sit flat at the site repo root alongside ``index.html`` and ``assets/``;
+non-report entries (missing ``meta.yaml``) are ignored.
 """
 from __future__ import annotations
 
@@ -58,7 +60,7 @@ def collect(reports_dir: Path) -> list[dict]:
         if status not in ("ready", "published"):
             continue
         meta["slug"] = meta.get("slug") or child.name
-        meta["href"] = f"reports/{child.name}/"
+        meta["href"] = f"{child.name}/"
         entries.append(meta)
     entries.sort(key=lambda m: (str(m.get("date") or ""), m["slug"]), reverse=True)
     return entries

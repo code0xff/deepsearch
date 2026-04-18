@@ -3,7 +3,7 @@ description: Self-critique pass — audit the draft for unsupported claims, weak
 argument-hint: <slug>
 ---
 
-You are running the **verification lane** on `$DEEPSEARCH_SITE/reports/$ARGUMENTS`. This is an adversarial pass: assume the draft is wrong and try to prove it. Follow `PROTOCOL.md` for the shared publish and critique invariants. Paths below are relative to the site repo root.
+You are running the **verification lane** on `$DEEPSEARCH_SITE/$ARGUMENTS`. This is an adversarial pass: assume the draft is wrong and try to prove it. Follow `PROTOCOL.md` for the shared publish and critique invariants. Paths below are relative to the site repo root.
 
 Produce `working/critique.md` with sections:
 

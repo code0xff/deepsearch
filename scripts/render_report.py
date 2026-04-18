@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Render a report from its draft into a self-contained HTML file.
 
-Inputs (all under reports/<slug>/):
+Inputs (all under <site>/<slug>/):
     meta.yaml           — title, subtitle, slug, lang, date, tags, status
     draft.md            — markdown body with [^sNN] footnote refs
     working/sources.jsonl — one JSON source per line, keyed by `id`
 
 Output:
-    reports/<slug>/index.html — rendered from assets/report-template.html
+    <site>/<slug>/index.html — rendered from assets/report-template.html
 
 Assumes the draft's first section named "Abstract" (or "초록") is the abstract.
 Footnote refs in the draft become numbered citations keyed to the References section.

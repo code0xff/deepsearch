@@ -7,7 +7,7 @@ This document defines the provider-neutral Deepsearch protocol. Any agent adapte
 Deepsearch is split across two repositories:
 
 - **Harness repo** (`deepsearch`) — this repo. Holds the CLI (`scripts/`), the HTML template (`assets/report-template.html`), protocol docs, and agent adapters. No report artefacts are committed here.
-- **Site repo** (`reports`, e.g. `git@github.com:code0xff/reports.git`) — holds every `reports/<slug>/` tree, the root `index.html`, `.nojekyll`, and `assets/style.css`. GitHub Pages serves this repo.
+- **Site repo** (`reports`, e.g. `git@github.com:code0xff/reports.git`) — holds every `<slug>/` tree at its root, plus the root `index.html`, `.nojekyll`, and `assets/style.css`. GitHub Pages serves this repo.
 
 All harness commands resolve the site path in this order:
 
@@ -15,22 +15,30 @@ All harness commands resolve the site path in this order:
 2. `DEEPSEARCH_SITE` environment variable.
 3. Default: `../reports` relative to the harness repo.
 
-Paths in this document written as `reports/<slug>/…` are relative to the site repo root.
+Paths in this document written as `<slug>/…` are relative to the site repo root.
 
 ## 1. Directory contract
 
 ```
-<site>/reports/<slug>/
-  index.html
-  meta.yaml
-  draft.md
-  working/
-    outline.md
-    claims.md
-    sources.jsonl
-    gaps.md
-    critique.md
+<site>/
+  index.html          (generated — root listing)
+  assets/style.css
+  .nojekyll
+  <slug>/
+    index.html
+    meta.yaml
+    draft.md
+    working/
+      outline.md
+      claims.md
+      sources.jsonl
+      gaps.md
+      critique.md
 ```
+
+Slug directories sit flat at the site repo root. The names `assets`,
+`index`, `reports`, `readme`, `.git`, `.github`, and `.nojekyll` are
+reserved and cannot be used as slugs.
 
 `working/` is part of the audit trail and must stay committed in the site repo.
 
@@ -51,7 +59,7 @@ The loop ends only when `working/gaps.md` is empty or the user explicitly accept
 ## 3. Phase definitions
 
 ### Frame
-- Initialize `reports/<slug>/` in the site repo via `init-report`.
+- Initialize `<slug>/` at the site repo root via `init-report`.
 - Write `meta.yaml`.
 - Write `working/outline.md` with 5–8 top-level sections.
 

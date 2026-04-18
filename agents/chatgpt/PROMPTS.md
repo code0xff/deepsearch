@@ -11,7 +11,7 @@ Read `PROTOCOL.md`, then initialize a new report with:
 python3 scripts/harness.py init-report "<topic>"
 ```
 
-After initialization, inspect `$DEEPSEARCH_SITE/reports/<slug>/meta.yaml` and produce inside the same directory:
+After initialization, inspect `$DEEPSEARCH_SITE/<slug>/meta.yaml` and produce inside the same directory:
 - `working/outline.md`
 - `working/claims.md`
 
@@ -58,7 +58,7 @@ Run `git -C "$DEEPSEARCH_SITE" status` / `git -C "$DEEPSEARCH_SITE" diff` and sh
 
 ```bash
 cd "$DEEPSEARCH_SITE"
-git add reports/<slug>/ index.html
+git add <slug>/ index.html
 git commit -m "report: <slug> — <title>"
 git push
 ```

@@ -18,25 +18,25 @@ Steps:
    ```bash
    python3 scripts/harness.py render-report <slug>
    ```
-   This reads `<site>/reports/<slug>/{meta.yaml,draft.md,working/sources.jsonl}` and writes `<site>/reports/<slug>/index.html` from the harness template.
+   This reads `<site>/<slug>/{meta.yaml,draft.md,working/sources.jsonl}` and writes `<site>/<slug>/index.html` from the harness template.
 
 3. **Regenerate the root index**:
    ```bash
    python3 scripts/harness.py render-index
    ```
-   This scans every `<site>/reports/*/meta.yaml` (excluding `status: drafting`) and writes `<site>/index.html`.
+   This scans every `<site>/*/meta.yaml` (excluding `status: drafting`) and writes `<site>/index.html`.
 
-4. **Show the diff** from the site repo — `git -C "$DEEPSEARCH_SITE" status`, `git -C "$DEEPSEARCH_SITE" diff --stat`, and the per-file diffs for the changed `reports/<slug>/index.html` and `index.html`. Summarise to the user what is about to be committed.
+4. **Show the diff** from the site repo — `git -C "$DEEPSEARCH_SITE" status`, `git -C "$DEEPSEARCH_SITE" diff --stat`, and the per-file diffs for the changed `<slug>/index.html` and root `index.html`. Summarise to the user what is about to be committed.
 
 5. **Wait for explicit "commit" approval from the user.** The user may want to edit `meta.yaml` tags, rename the slug, or tweak the draft. Do not push unilaterally.
 
 6. On approval (run inside the site repo):
    ```bash
    cd "$DEEPSEARCH_SITE"
-   git add reports/<slug>/ index.html
+   git add <slug>/ index.html
    git commit -m "report: <slug> — <title>"
    git push
    ```
    GitHub Actions in the site repo picks it up from there.
 
-7. After push, report the expected Pages URL back to the user (e.g. `https://<owner>.github.io/reports/reports/<slug>/`).
+7. After push, report the expected Pages URL back to the user (e.g. `https://<owner>.github.io/reports/<slug>/`).

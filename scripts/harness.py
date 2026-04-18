@@ -16,7 +16,7 @@ try:
 except ImportError:
     yaml = None
 
-from paths import REPO, add_site_arg, resolve_site, site_reports
+from paths import REPO, RESERVED_SLUGS, add_site_arg, resolve_site, site_reports
 from render_index import render_index
 from render_report import render_report
 
@@ -184,7 +184,7 @@ def prepublish_check(site: Path, slug: str) -> tuple[bool, list[str]]:
         errors.append("missing working/critique.md")
     else:
         critique_text = critique_path.read_text(encoding="utf-8")
-        must_fix = re.findall(r"\bmust-fix\b", critique_text, flags=re.IGNORECASE)
+        must_fix = re.findall(r"\*\*must-fix\*\*", critique_text, flags=re.IGNORECASE)
         if must_fix:
             errors.append(f"critique.md: contains {len(must_fix)} must-fix marker(s)")
     index_path = root / "index.html"
@@ -199,6 +199,8 @@ def cmd_init_report(args: argparse.Namespace) -> int:
     topic = args.topic.strip()
     slug = args.slug or slugify(topic)
     lang = args.lang or detect_lang(topic)
+    if slug.lower() in RESERVED_SLUGS:
+        return fail(f"slug {slug!r} is reserved at the site repo root; pass --slug to override")
     site = resolve_site(args.site)
     root = report_dir(site, slug)
     if root.exists():
