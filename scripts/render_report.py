@@ -357,28 +357,31 @@ def build_hreflang(page_lang: str, primary_lang: str, langs: list[str]) -> str:
     return "\n".join(lines)
 
 
-def build_site_header(page_lang: str, primary_lang: str, langs: list[str], brand_href: str) -> str:
+NATIVE_LANG_LABEL = {"en": "English", "ko": "한국어"}
+
+
+def build_site_header(page_lang: str, primary_lang: str, langs: list[str], brand_href: str, report_is_alt: bool) -> str:
     strings = chrome(page_lang)
-    lang_toggle = ""
-    if len(langs) >= 2:
-        # Link to the primary if we're on an alt; otherwise link to first alt.
-        if page_lang == primary_lang:
-            alt_lang = next((l for l in langs if l != primary_lang), None)
+    # Always offer a language toggle. If the current report has a translation
+    # in the alternate language, link to it; otherwise link to that language's
+    # site root index. The user can always bounce out of the current report.
+    alt_lang = "ko" if page_lang == "en" else "en"
+    if alt_lang in langs:
+        alt_href = sibling_href_for(page_lang, alt_lang, primary_lang)
+    else:
+        # No translation of this report; jump to the alt-language root index.
+        if report_is_alt:
+            # We're at <slug>/<page_lang>/index.html → three levels up? No, two.
+            # <slug>/<page_lang>/index.html → site root is ../../ → then lang subdir.
+            alt_href = "../../index.html" if alt_lang == "en" else f"../../{alt_lang}/index.html"
         else:
-            alt_lang = primary_lang
-        if alt_lang:
-            alt_label = chrome(page_lang)["lang_other_label"]
-            # Label reflects the language being offered, not the current one,
-            # so always use the alt lang's native label.
-            alt_label = chrome(alt_lang)["brand"] if alt_lang == "en" else alt_label
-            # Simpler: native names via a fixed map.
-            native = {"en": "English", "ko": "한국어"}
-            alt_label = native.get(alt_lang, alt_lang)
-            alt_href = sibling_href_for(page_lang, alt_lang, primary_lang)
-            lang_toggle = (
-                f'    <a class="site-header__lang" href="{html.escape(alt_href)}" '
-                f'hreflang="{html.escape(alt_lang)}">{html.escape(alt_label)}</a>\n'
-            )
+            # We're at <slug>/index.html → ../ is site root.
+            alt_href = "../index.html" if alt_lang == "en" else f"../{alt_lang}/index.html"
+    alt_label = NATIVE_LANG_LABEL.get(alt_lang, alt_lang)
+    lang_toggle = (
+        f'    <a class="site-header__lang" href="{html.escape(alt_href)}" '
+        f'hreflang="{html.escape(alt_lang)}">{html.escape(alt_label)}</a>\n'
+    )
     return (
         '<header class="site-header">\n'
         f'  <a class="site-header__brand" href="{html.escape(brand_href)}">{html.escape(strings["brand"])}</a>\n'
@@ -442,6 +445,7 @@ def render_one(
         primary_lang=primary_lang,
         langs=langs,
         brand_href=brand_href_for(lang, primary_lang),
+        report_is_alt=(lang != primary_lang),
     )
     hreflang_links = build_hreflang(lang, primary_lang, langs)
 
