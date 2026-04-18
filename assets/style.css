@@ -401,7 +401,7 @@ a.footnote-ref:hover {
 
 .index-list li {
   border-bottom: 1px solid var(--rule);
-  padding: 1.25rem 0;
+  padding: 0.9rem 0 1rem;
   margin: 0;
 }
 
@@ -412,14 +412,15 @@ a.footnote-ref:hover {
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.2rem;
 }
 
 .index-list .entry-title {
   font-family: "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: 1.2rem;
   font-weight: 500;
-  margin: 0 0 0.3rem;
+  line-height: 1.35;
+  margin: 0 0 0.15rem;
 }
 
 .index-list .entry-title a {
@@ -434,8 +435,8 @@ a.footnote-ref:hover {
 
 .index-list .entry-subtitle {
   color: var(--ink-soft);
-  font-style: italic;
-  margin: 0 0 0.4rem;
+  line-height: 1.5;
+  margin: 0;
   font-size: 0.95rem;
 }
 
@@ -443,6 +444,7 @@ a.footnote-ref:hover {
   font-size: 0.78rem;
   color: var(--muted);
   letter-spacing: 0.05em;
+  margin-top: 0.35rem;
 }
 
 /* ---------- Footer ---------- */
