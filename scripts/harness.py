@@ -207,6 +207,7 @@ def validate_report(site: Path, slug: str) -> tuple[bool, list[str]]:
         for sid in FOOTNOTE_RE.findall(text):
             if sid not in sources:
                 errors.append(f"{lp.relative_to(site)}: unresolved citation [^{sid}]")
+        errors.extend(check_math_delimiters(text, lp.relative_to(site).as_posix()))
         # Alternate-language drafts need a translated title to avoid falling back
         # to the primary title in the header/index.
         if lang != primary_lang:
@@ -214,6 +215,31 @@ def validate_report(site: Path, slug: str) -> tuple[bool, list[str]]:
                 errors.append(f"meta.yaml: missing title_{lang} for alternate language {lang}")
 
     return not errors, errors
+
+
+def check_math_delimiters(text: str, rel_path: str) -> list[str]:
+    """Guard against the KaTeX-mangling-tickers class of bug.
+
+    The report template wires KaTeX auto-render to inline ``\\(..\\)`` and
+    display ``$$..$$``. Unbalanced delimiters would cause KaTeX to swallow
+    everything from an open delimiter to the end of the document (or the
+    next open), which is how ``$VIRTUAL`` once rendered neighbouring prose
+    as a broken formula. Also flag legacy ``$..$`` inline math so authors
+    who know the old convention don't silently produce dead syntax.
+    """
+    errors: list[str] = []
+    opens = text.count(r"\(")
+    closes = text.count(r"\)")
+    if opens != closes:
+        errors.append(
+            f"{rel_path}: unbalanced inline math — \\( appears {opens} time(s), "
+            f"\\) appears {closes} time(s)"
+        )
+    if text.count("$$") % 2:
+        errors.append(
+            f"{rel_path}: odd number of $$ display-math delimiters; every $$ needs a closing $$"
+        )
+    return errors
 
 
 def prepublish_check(site: Path, slug: str) -> tuple[bool, list[str]]:
