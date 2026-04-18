@@ -5,7 +5,7 @@ argument-hint: <slug> <query>
 
 You are running the **web lane** of the research pipeline. The active report slug and the query are: **$ARGUMENTS** (first token = slug, rest = query).
 
-Inputs:
+Inputs (all in the site repo `$DEEPSEARCH_SITE`):
 - `reports/<slug>/working/sources.jsonl` — append new sources here, do not rewrite existing lines.
 - `reports/<slug>/meta.yaml` — for topic language.
 

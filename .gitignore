@@ -7,3 +7,9 @@ node_modules/
 .env.local
 .omc/
 .claude/settings.local.json
+
+# Report artefacts live in the sibling `reports` site repo (DEEPSEARCH_SITE).
+# Never commit rendered reports or the root index to this repo.
+/reports/
+/index.html
+/.nojekyll

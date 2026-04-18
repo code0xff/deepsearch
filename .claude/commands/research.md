@@ -1,21 +1,23 @@
 ---
-description: Orchestrate a full deep-research run for a topic, producing an HTML report in reports/<slug>/
+description: Orchestrate a full deep-research run for a topic, producing an HTML report in $DEEPSEARCH_SITE/reports/<slug>/
 argument-hint: <topic in natural language>
 ---
 
 You are running the main research loop for this repository. Re-read `PROTOCOL.md` before starting. `CLAUDE.md` is the Claude adapter; `PROTOCOL.md` is the source of truth for the phases and invariants. Do not skip phases.
+
+Report artefacts live in the **site repo** resolved via `$DEEPSEARCH_SITE` (default: `../reports`). All paths like `reports/<slug>/…` below are relative to that site repo.
 
 The topic is: **$ARGUMENTS**
 
 ## Phase 0 — Initialise
 
 1. Derive a URL-safe slug from the topic (lowercase, hyphens, ≤ 40 chars).
-2. If `reports/<slug>/` already exists, stop and ask the user whether to resume, overwrite, or pick a new slug. When resuming, reload `meta.yaml`, `working/outline.md`, `working/claims.md`, `working/sources.jsonl`, `working/gaps.md` and continue from the earliest unfinished phase.
+2. If `$DEEPSEARCH_SITE/reports/<slug>/` already exists, stop and ask the user whether to resume, overwrite, or pick a new slug. When resuming, reload `meta.yaml`, `working/outline.md`, `working/claims.md`, `working/sources.jsonl`, `working/gaps.md` and continue from the earliest unfinished phase.
 3. Otherwise initialize the scaffold with:
    ```bash
    python3 scripts/harness.py init-report "<topic>"
    ```
-   If you need to override the generated slug or language, rerun with `--slug` / `--lang`.
+   (`init-report` writes into `$DEEPSEARCH_SITE` automatically.) If you need to override the generated slug or language, rerun with `--slug` / `--lang`.
 4. State the plan to the user (slug, language, expected sections) in ≤ 3 sentences and proceed.
 
 ## Phase 1 — Frame (outline)

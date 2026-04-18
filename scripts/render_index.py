@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Regenerate the repo-root index.html by scanning reports/*/meta.yaml.
+"""Regenerate the site repo's root index.html by scanning reports/*/meta.yaml.
 
 Only reports whose meta.yaml `status` is `ready` or `published` are listed.
 Draft reports are skipped. Sorted by `date` descending, then by slug.
+
+The site repo location is resolved via ``paths.resolve_site`` (CLI ``--site``,
+``DEEPSEARCH_SITE`` env, or the default ``../reports``).
 """
 from __future__ import annotations
 
+import argparse
 import html
 import re
 import sys
@@ -16,9 +20,7 @@ try:
 except ImportError:
     yaml = None
 
-REPO = Path(__file__).resolve().parent.parent
-REPORTS = REPO / "reports"
-OUT = REPO / "index.html"
+from paths import add_site_arg, resolve_site, site_reports
 
 
 def parse_meta(path: Path) -> dict:
@@ -42,11 +44,11 @@ def parse_meta(path: Path) -> dict:
     return out
 
 
-def collect() -> list[dict]:
+def collect(reports_dir: Path) -> list[dict]:
     entries = []
-    if not REPORTS.is_dir():
+    if not reports_dir.is_dir():
         return entries
-    for child in REPORTS.iterdir():
+    for child in reports_dir.iterdir():
         meta_path = child / "meta.yaml"
         index_path = child / "index.html"
         if not (child.is_dir() and meta_path.exists() and index_path.exists()):
@@ -122,8 +124,10 @@ def render_item(m: dict) -> str:
     return "\n".join(p for p in parts if p)
 
 
-def render_index() -> Path:
-    entries = collect()
+def render_index(site: Path) -> Path:
+    reports_dir = site_reports(site)
+    out_path = site / "index.html"
+    entries = collect(reports_dir)
     items_html = "\n".join(render_item(m) for m in entries) or '      <li><em>No reports published yet.</em></li>'
     updated = entries[0].get("date") if entries else "—"
     out = (
@@ -132,13 +136,16 @@ def render_index() -> Path:
         .replace("{{UPDATED}}", html.escape(str(updated)))
         .replace("{{ITEMS}}", items_html)
     )
-    OUT.write_text(out, encoding="utf-8")
-    print(f"wrote {OUT} ({len(entries)} entries)")
-    return OUT
+    out_path.write_text(out, encoding="utf-8")
+    print(f"wrote {out_path} ({len(entries)} entries)")
+    return out_path
 
 
 def main() -> int:
-    render_index()
+    ap = argparse.ArgumentParser()
+    add_site_arg(ap)
+    args = ap.parse_args()
+    render_index(resolve_site(args.site))
     return 0
 
 

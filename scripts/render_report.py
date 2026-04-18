@@ -26,7 +26,8 @@ try:
 except ImportError:
     yaml = None  # Fallback parser below.
 
-REPO = Path(__file__).resolve().parent.parent
+from paths import REPO, add_site_arg, resolve_site, site_reports
+
 TEMPLATE = REPO / "assets" / "report-template.html"
 
 
@@ -229,8 +230,8 @@ def replace_template(template: str, values: dict[str, str]) -> str:
     return template
 
 
-def render_report(slug: str) -> Path:
-    report_dir = REPO / "reports" / slug
+def render_report(site: Path, slug: str) -> Path:
+    report_dir = site_reports(site) / slug
     if not report_dir.is_dir():
         print(f"error: {report_dir} does not exist", file=sys.stderr)
         raise SystemExit(2)
@@ -282,8 +283,9 @@ def render_report(slug: str) -> Path:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("slug")
+    add_site_arg(ap)
     args = ap.parse_args()
-    render_report(args.slug)
+    render_report(resolve_site(args.site), args.slug)
     return 0
 
 

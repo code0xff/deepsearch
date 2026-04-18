@@ -15,9 +15,10 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
 
 ## Runtime assumptions
 
-- You are inside a Claude Code session in this repository.
+- You are inside a Claude Code session in the harness repo.
+- Report artefacts live in a sibling **site repo** at `$DEEPSEARCH_SITE` (default `../reports`). Every scaffold, draft, source file, and rendered HTML is created there — never in the harness repo.
 - WebSearch and WebFetch are available.
-- Shell access is available for `python3 scripts/harness.py ...` and the search helper scripts.
+- Shell access is available for `python3 scripts/harness.py ...` and the search helper scripts. All harness subcommands honour `--site <path>` and the `DEEPSEARCH_SITE` env var.
 
 ## Claude workflow
 
@@ -41,7 +42,7 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
    python3 scripts/harness.py render-index
    python3 scripts/harness.py prepublish-check <slug>
    ```
-9. Show the diff and wait for explicit user approval before commit and push.
+9. Show the site-repo diff (`git -C "$DEEPSEARCH_SITE" diff`) and wait for explicit user approval. Commit and push happen **inside the site repo**, not the harness repo.
 
 ## Claude-specific rules
 

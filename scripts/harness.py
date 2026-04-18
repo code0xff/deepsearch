@@ -16,11 +16,10 @@ try:
 except ImportError:
     yaml = None
 
+from paths import REPO, add_site_arg, resolve_site, site_reports
 from render_index import render_index
 from render_report import render_report
 
-REPO = Path(__file__).resolve().parent.parent
-REPORTS = REPO / "reports"
 SOURCE_TYPES = {"paper", "primary", "technical", "news", "blog"}
 LANG_RE = re.compile(r"[가-힣]")
 FOOTNOTE_RE = re.compile(r"\[\^([a-zA-Z0-9_]+)\]")
@@ -63,8 +62,8 @@ def dump_yaml(data: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
-def report_dir(slug: str) -> Path:
-    return REPORTS / slug
+def report_dir(site: Path, slug: str) -> Path:
+    return site_reports(site) / slug
 
 
 def detect_lang(text: str) -> str:
@@ -132,8 +131,8 @@ def validate_source_record(source: dict, sid: str) -> list[str]:
     return errors
 
 
-def validate_report(slug: str) -> tuple[bool, list[str]]:
-    root = report_dir(slug)
+def validate_report(site: Path, slug: str) -> tuple[bool, list[str]]:
+    root = report_dir(site, slug)
     errors: list[str] = []
     meta_path = root / "meta.yaml"
     draft_path = root / "draft.md"
@@ -143,7 +142,7 @@ def validate_report(slug: str) -> tuple[bool, list[str]]:
         return False, [f"missing report directory {root}"]
     for path in (meta_path, draft_path, sources_path):
         if not path.exists():
-            errors.append(f"missing {path.relative_to(REPO)}")
+            errors.append(f"missing {path.relative_to(site)}")
     if errors:
         return False, errors
 
@@ -171,9 +170,9 @@ def validate_report(slug: str) -> tuple[bool, list[str]]:
     return not errors, errors
 
 
-def prepublish_check(slug: str) -> tuple[bool, list[str]]:
-    ok, errors = validate_report(slug)
-    root = report_dir(slug)
+def prepublish_check(site: Path, slug: str) -> tuple[bool, list[str]]:
+    ok, errors = validate_report(site, slug)
+    root = report_dir(site, slug)
     if not ok:
         return ok, errors
     meta = load_yaml(root / "meta.yaml")
@@ -200,7 +199,8 @@ def cmd_init_report(args: argparse.Namespace) -> int:
     topic = args.topic.strip()
     slug = args.slug or slugify(topic)
     lang = args.lang or detect_lang(topic)
-    root = report_dir(slug)
+    site = resolve_site(args.site)
+    root = report_dir(site, slug)
     if root.exists():
         return fail(f"{root} already exists")
     title = args.title or topic.strip()
@@ -225,7 +225,8 @@ def cmd_init_report(args: argparse.Namespace) -> int:
         "working/critique.md": "",
     }.items():
         (root / rel).write_text(content, encoding="utf-8")
-    print(f"initialized {root.relative_to(REPO)}")
+    print(f"initialized {root}")
+    print(f"site={site}")
     print(f"slug={slug}")
     print(f"lang={lang}")
     print(f"next_source_id={next_source_id({})}")
@@ -233,19 +234,19 @@ def cmd_init_report(args: argparse.Namespace) -> int:
 
 
 def cmd_render_report(args: argparse.Namespace) -> int:
-    render_report(args.slug)
+    render_report(resolve_site(args.site), args.slug)
     return 0
 
 
-def cmd_render_index(_: argparse.Namespace) -> int:
-    render_index()
+def cmd_render_index(args: argparse.Namespace) -> int:
+    render_index(resolve_site(args.site))
     return 0
 
 
 def cmd_validate_report(args: argparse.Namespace) -> int:
-    ok, errors = validate_report(args.slug)
+    ok, errors = validate_report(resolve_site(args.site), args.slug)
     if ok:
-        print(f"ok: reports/{args.slug} passed validation")
+        print(f"ok: {args.slug} passed validation")
         return 0
     for err in errors:
         print(f"- {err}")
@@ -253,9 +254,9 @@ def cmd_validate_report(args: argparse.Namespace) -> int:
 
 
 def cmd_prepublish_check(args: argparse.Namespace) -> int:
-    ok, errors = prepublish_check(args.slug)
+    ok, errors = prepublish_check(resolve_site(args.site), args.slug)
     if ok:
-        print(f"ok: reports/{args.slug} is ready to publish")
+        print(f"ok: {args.slug} is ready to publish")
         return 0
     for err in errors:
         print(f"- {err}")
@@ -272,21 +273,26 @@ def build_parser() -> argparse.ArgumentParser:
     init_ap.add_argument("--lang", choices=["ko", "en"])
     init_ap.add_argument("--title")
     init_ap.add_argument("--subtitle")
+    add_site_arg(init_ap)
     init_ap.set_defaults(func=cmd_init_report)
 
     render_report_ap = sub.add_parser("render-report", help="Render a report to HTML")
     render_report_ap.add_argument("slug")
+    add_site_arg(render_report_ap)
     render_report_ap.set_defaults(func=cmd_render_report)
 
     render_index_ap = sub.add_parser("render-index", help="Regenerate the root report listing")
+    add_site_arg(render_index_ap)
     render_index_ap.set_defaults(func=cmd_render_index)
 
     validate_ap = sub.add_parser("validate-report", help="Validate citations and required files")
     validate_ap.add_argument("slug")
+    add_site_arg(validate_ap)
     validate_ap.set_defaults(func=cmd_validate_report)
 
     prepublish_ap = sub.add_parser("prepublish-check", help="Run publish gate checks")
     prepublish_ap.add_argument("slug")
+    add_site_arg(prepublish_ap)
     prepublish_ap.set_defaults(func=cmd_prepublish_check)
     return ap
 

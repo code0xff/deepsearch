@@ -7,10 +7,11 @@ Use these prompts as phase templates when driving the Deepsearch harness from a 
 Read `PROTOCOL.md`, then initialize a new report with:
 
 ```bash
+# Make sure $DEEPSEARCH_SITE points to the sibling reports repo checkout
 python3 scripts/harness.py init-report "<topic>"
 ```
 
-After initialization, inspect `reports/<slug>/meta.yaml` and produce:
+After initialization, inspect `$DEEPSEARCH_SITE/reports/<slug>/meta.yaml` and produce inside the same directory:
 - `working/outline.md`
 - `working/claims.md`
 
@@ -53,4 +54,13 @@ If any command fails, fix the underlying report artefacts and rerun.
 
 ## 6. Publish
 
-Show the git diff to the user. Do not commit or push without explicit user approval.
+Run `git -C "$DEEPSEARCH_SITE" status` / `git -C "$DEEPSEARCH_SITE" diff` and show the output to the user. Commit and push happen inside the site repo:
+
+```bash
+cd "$DEEPSEARCH_SITE"
+git add reports/<slug>/ index.html
+git commit -m "report: <slug> — <title>"
+git push
+```
+
+Do not commit or push without explicit user approval.

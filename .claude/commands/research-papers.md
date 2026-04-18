@@ -20,7 +20,7 @@ Steps:
 
 4. **Fetch abstracts** if not already included. Use WebFetch on the arXiv abs URL or the Semantic Scholar page for paywalled ones. Never fabricate quotes from an abstract you have not actually read.
 
-5. **Append** each kept paper to `reports/<slug>/working/sources.jsonl`:
+5. **Append** each kept paper to `<site>/reports/<slug>/working/sources.jsonl` (resolve `<site>` via `$DEEPSEARCH_SITE`):
    ```json
    {"id":"s<NN>","url":"...","title":"...","authors":["..."],"venue":"...","year":<int>,"type":"paper","trust":1,"accessed":"<YYYY-MM-DD>","quote":"<sentence from abstract or body>","claim_refs":["<claim id>", ...],"citations":<int|null>}
    ```
