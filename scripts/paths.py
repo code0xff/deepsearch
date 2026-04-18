@@ -19,6 +19,7 @@ REPO = Path(__file__).resolve().parent.parent
 RESERVED_SLUGS = frozenset({
     "assets",
     "index",
+    "ko",
     "reports",
     "readme",
     ".git",

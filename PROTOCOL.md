@@ -21,13 +21,18 @@ Paths in this document written as `<slug>/…` are relative to the site repo roo
 
 ```
 <site>/
-  index.html          (generated — root listing)
+  index.html              (generated — English root listing)
+  ko/
+    index.html            (generated — Korean root listing)
   assets/style.css
   .nojekyll
   <slug>/
-    index.html
+    index.html            (primary language, equal to meta.lang)
     meta.yaml
-    draft.md
+    draft.md              (primary-language markdown)
+    draft.<code>.md       (each alternate language in meta.langs)
+    <code>/
+      index.html          (one per alternate language, e.g. ko/index.html)
     working/
       outline.md
       claims.md
@@ -37,10 +42,33 @@ Paths in this document written as `<slug>/…` are relative to the site repo roo
 ```
 
 Slug directories sit flat at the site repo root. The names `assets`,
-`index`, `reports`, `readme`, `.git`, `.github`, and `.nojekyll` are
+`index`, `ko`, `reports`, `readme`, `.git`, `.github`, and `.nojekyll` are
 reserved and cannot be used as slugs.
 
-`working/` is part of the audit trail and must stay committed in the site repo.
+`working/` is part of the audit trail and is shared across all language
+outputs of a report; it must stay committed in the site repo.
+
+### 1.1 Bilingual conventions
+
+- `meta.lang` declares the **primary** language. Its rendered output lives
+  at `<slug>/index.html`.
+- `meta.langs` is a list of **every** language available for the report,
+  including the primary. When the list has more than one entry the report
+  is bilingual; each non-primary language `<code>` gets:
+    - a draft at `<slug>/draft.<code>.md`
+    - a translated `title_<code>` and `subtitle_<code>` in meta.yaml
+    - a rendered `<slug>/<code>/index.html`
+- English is the canonical primary for new reports unless the topic is
+  written in another supported language. When `meta.lang = en` the
+  English rendered page is the "/" canonical URL and Korean lives at
+  `/<slug>/ko/`.
+- Rendered pages declare siblings via `<link rel="alternate" hreflang=…>`
+  tags so search engines treat them as localized variants, not
+  duplicates.
+- Both the root index and each report expose a persistent header bar
+  hosting the language toggle (when alternates exist) and the
+  light/dark theme toggle. Theme state persists in `localStorage` under
+  the key `theme`.
 
 ## 2. Research loop
 
@@ -144,11 +172,16 @@ The provider-neutral CLI entrypoint is `python3 scripts/harness.py`. Every subco
 
 Commands:
 
-- `init-report <topic> [--slug ...] [--lang ko|en] [--site ...]`
+- `init-report <topic> [--slug ...] [--lang ko|en] [--langs en,ko] [--site ...]`
 - `validate-report <slug> [--site ...]`
 - `render-report <slug> [--site ...]`
 - `render-index [--site ...]`
 - `prepublish-check <slug> [--site ...]`
+
+`init-report --langs en,ko` scaffolds both `draft.md` and `draft.ko.md`
+plus the nested `title_ko`/`subtitle_ko` placeholders. `render-report`
+iterates over every language in `meta.langs` and writes one HTML file
+per language.
 
 These commands perform deterministic harness tasks and should be preferred over agent-specific ad hoc shell sequences.
 

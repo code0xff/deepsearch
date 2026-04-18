@@ -23,9 +23,13 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
 ## Claude workflow
 
 1. Read `PROTOCOL.md` before starting.
-2. Initialize a report scaffold with:
+2. Initialize a report scaffold. Single-language:
    ```bash
    python3 scripts/harness.py init-report "<topic>"
+   ```
+   Bilingual (primary + alternates scaffolded in one shot):
+   ```bash
+   python3 scripts/harness.py init-report "<topic>" --langs en,ko
    ```
 3. Write `working/outline.md` and `working/claims.md`.
 4. Gather sources via:
@@ -33,7 +37,10 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
    - `/research-papers`
    - `/research-github`
 5. Keep `working/gaps.md` current until the gap list is empty or the user accepts the remaining gaps.
-6. Draft `draft.md`.
+6. Draft **every** language declared in `meta.langs`:
+   - `draft.md` — primary (English for new reports unless the user specified otherwise)
+   - `draft.<code>.md` — each alternate, plus `title_<code>` / `subtitle_<code>` in meta.yaml
+   Sources (`working/sources.jsonl`) are shared across languages; only the prose changes.
 7. Run `/research-verify`.
 8. Run:
    ```bash
@@ -55,11 +62,12 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
 
 Claude must maintain the exact report artefacts defined in `PROTOCOL.md`:
 
-- `meta.yaml`
-- `draft.md`
+- `meta.yaml` (with `title_<code>` / `subtitle_<code>` for each alternate)
+- `draft.md` (primary language)
+- `draft.<code>.md` for each alternate language in `meta.langs`
 - `working/outline.md`
 - `working/claims.md`
-- `working/sources.jsonl`
+- `working/sources.jsonl` (shared across all languages)
 - `working/gaps.md`
 - `working/critique.md`
 

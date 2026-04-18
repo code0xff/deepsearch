@@ -23,6 +23,7 @@ from render_report import render_report
 SOURCE_TYPES = {"paper", "primary", "technical", "news", "blog"}
 LANG_RE = re.compile(r"[가-힣]")
 FOOTNOTE_RE = re.compile(r"\[\^([a-zA-Z0-9_]+)\]")
+SUPPORTED_LANGS = ("en", "ko")
 
 
 def fail(message: str) -> int:
@@ -55,6 +56,48 @@ def report_dir(site: Path, slug: str) -> Path:
 
 def detect_lang(text: str) -> str:
     return "ko" if LANG_RE.search(text) else "en"
+
+
+def parse_langs(raw: str | None, primary: str) -> list[str]:
+    """Parse a --langs string like 'en,ko' into an ordered list.
+
+    The primary language is always included as the first entry; duplicates
+    and unknown codes raise. Unknown codes mean an i18n strings table is
+    missing and the harness cannot render that language.
+    """
+    if not raw:
+        return [primary]
+    parts = [p.strip() for p in raw.split(",") if p.strip()]
+    for p in parts:
+        if p not in SUPPORTED_LANGS:
+            raise ValueError(f"unsupported lang code: {p!r} (supported: {','.join(SUPPORTED_LANGS)})")
+    ordered: list[str] = []
+    seen: set[str] = set()
+    for p in [primary, *parts]:
+        if p not in seen:
+            ordered.append(p)
+            seen.add(p)
+    return ordered
+
+
+def resolve_lang_list(meta: dict) -> tuple[str, list[str]]:
+    primary = str(meta.get("lang") or "en")
+    declared = meta.get("langs")
+    if isinstance(declared, list) and declared:
+        langs = [str(l) for l in declared]
+    elif isinstance(declared, str) and declared.strip():
+        langs = [s.strip() for s in declared.strip("[]").split(",") if s.strip()]
+    else:
+        langs = [primary]
+    if primary not in langs:
+        langs = [primary] + langs
+    return primary, langs
+
+
+def draft_path(root: Path, lang: str, primary_lang: str) -> Path:
+    if lang == primary_lang:
+        return root / "draft.md"
+    return root / f"draft.{lang}.md"
 
 
 def slugify(text: str) -> str:
@@ -122,12 +165,11 @@ def validate_report(site: Path, slug: str) -> tuple[bool, list[str]]:
     root = report_dir(site, slug)
     errors: list[str] = []
     meta_path = root / "meta.yaml"
-    draft_path = root / "draft.md"
     sources_path = root / "working" / "sources.jsonl"
 
     if not root.is_dir():
         return False, [f"missing report directory {root}"]
-    for path in (meta_path, draft_path, sources_path):
+    for path in (meta_path, sources_path):
         if not path.exists():
             errors.append(f"missing {path.relative_to(site)}")
     if errors:
@@ -140,19 +182,36 @@ def validate_report(site: Path, slug: str) -> tuple[bool, list[str]]:
     if meta.get("slug") and meta["slug"] != slug:
         errors.append(f"meta.yaml: slug {meta['slug']} does not match directory {slug}")
 
-    draft = draft_path.read_text(encoding="utf-8")
-    refs = FOOTNOTE_RE.findall(draft)
-    if not draft.strip():
-        errors.append("draft.md is empty")
+    primary_lang, langs = resolve_lang_list(meta)
+    for lang in langs:
+        if lang not in SUPPORTED_LANGS:
+            errors.append(f"meta.yaml: unsupported lang {lang!r}")
+    if primary_lang not in langs:
+        errors.append(f"meta.yaml: primary lang {primary_lang!r} missing from langs")
 
     sources, source_errors = load_sources(sources_path)
     errors.extend(source_errors)
     for sid, source in sources.items():
         errors.extend(validate_source_record(source, sid))
 
-    for sid in refs:
-        if sid not in sources:
-            errors.append(f"draft.md: unresolved citation [^{sid}]")
+    # Each declared language needs its own non-empty draft with resolvable citations.
+    for lang in langs:
+        lp = draft_path(root, lang, primary_lang)
+        if not lp.exists():
+            errors.append(f"missing {lp.relative_to(site)}")
+            continue
+        text = lp.read_text(encoding="utf-8")
+        if not text.strip():
+            errors.append(f"{lp.relative_to(site)} is empty")
+            continue
+        for sid in FOOTNOTE_RE.findall(text):
+            if sid not in sources:
+                errors.append(f"{lp.relative_to(site)}: unresolved citation [^{sid}]")
+        # Alternate-language drafts need a translated title to avoid falling back
+        # to the primary title in the header/index.
+        if lang != primary_lang:
+            if not meta.get(f"title_{lang}"):
+                errors.append(f"meta.yaml: missing title_{lang} for alternate language {lang}")
 
     return not errors, errors
 
@@ -174,38 +233,57 @@ def prepublish_check(site: Path, slug: str) -> tuple[bool, list[str]]:
         must_fix = re.findall(r"\*\*must-fix\*\*", critique_text, flags=re.IGNORECASE)
         if must_fix:
             errors.append(f"critique.md: contains {len(must_fix)} must-fix marker(s)")
-    index_path = root / "index.html"
-    if index_path.exists():
-        draft_mtime = (root / "draft.md").stat().st_mtime
-        if index_path.stat().st_mtime < draft_mtime:
-            errors.append("index.html appears older than draft.md; rerun render-report")
+    primary_lang, langs = resolve_lang_list(meta)
+    for lang in langs:
+        idx = root / "index.html" if lang == primary_lang else root / lang / "index.html"
+        draft = draft_path(root, lang, primary_lang)
+        if idx.exists() and draft.exists():
+            if idx.stat().st_mtime < draft.stat().st_mtime:
+                errors.append(f"{idx.relative_to(site)} appears older than {draft.relative_to(site)}; rerun render-report")
+        elif draft.exists() and not idx.exists():
+            errors.append(f"missing rendered {idx.relative_to(site)}; rerun render-report")
     return not errors, errors
 
 
 def cmd_init_report(args: argparse.Namespace) -> int:
     topic = args.topic.strip()
     slug = args.slug or slugify(topic)
-    lang = args.lang or detect_lang(topic)
+    lang = args.lang or ("en" if args.langs else detect_lang(topic))
     if slug.lower() in RESERVED_SLUGS:
         return fail(f"slug {slug!r} is reserved at the site repo root; pass --slug to override")
+    try:
+        langs = parse_langs(args.langs, lang)
+    except ValueError as exc:
+        return fail(str(exc))
     site = resolve_site(args.site)
     root = report_dir(site, slug)
     if root.exists():
         return fail(f"{root} already exists")
     title = args.title or topic.strip()
     subtitle = args.subtitle or "Research report generated via the Deepsearch harness."
-    meta = {
+    meta: dict = {
         "title": title,
         "subtitle": subtitle,
+    }
+    # Seed empty translated title/subtitle placeholders for alt langs so the
+    # author sees the expected keys when editing meta.yaml.
+    for alt in langs:
+        if alt == lang:
+            continue
+        meta[f"title_{alt}"] = ""
+        meta[f"subtitle_{alt}"] = ""
+    meta.update({
         "slug": slug,
         "lang": lang,
+        "langs": list(langs),
         "date": date.today().isoformat(),
         "tags": [],
         "status": "drafting",
-    }
+    })
     (root / "working").mkdir(parents=True)
     (root / "meta.yaml").write_text(dump_yaml(meta), encoding="utf-8")
-    (root / "draft.md").write_text("", encoding="utf-8")
+    for l in langs:
+        draft_path(root, l, lang).write_text("", encoding="utf-8")
     for rel, content in {
         "working/outline.md": "",
         "working/claims.md": "",
@@ -218,6 +296,7 @@ def cmd_init_report(args: argparse.Namespace) -> int:
     print(f"site={site}")
     print(f"slug={slug}")
     print(f"lang={lang}")
+    print(f"langs={','.join(langs)}")
     print(f"next_source_id={next_source_id({})}")
     return 0
 
@@ -259,7 +338,10 @@ def build_parser() -> argparse.ArgumentParser:
     init_ap = sub.add_parser("init-report", help="Create a new report scaffold")
     init_ap.add_argument("topic")
     init_ap.add_argument("--slug")
-    init_ap.add_argument("--lang", choices=["ko", "en"])
+    init_ap.add_argument("--lang", choices=list(SUPPORTED_LANGS),
+                         help="Primary language (default: auto-detect from topic, or 'en' if --langs is set)")
+    init_ap.add_argument("--langs",
+                         help=f"Comma-separated list of languages to scaffold (default: primary only). Supported: {','.join(SUPPORTED_LANGS)}")
     init_ap.add_argument("--title")
     init_ap.add_argument("--subtitle")
     add_site_arg(init_ap)
