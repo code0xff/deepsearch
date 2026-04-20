@@ -3,8 +3,12 @@
 Deepsearch is a deep-research harness for producing source-backed HTML reports. The harness is split from its publication output: this repo holds the scripts and protocol; rendered reports live and deploy from a sibling site repo.
 
 - Protocol: [`PROTOCOL.md`](PROTOCOL.md)
-- Adapters: [`CLAUDE.md`](CLAUDE.md), [`agents/chatgpt/README.md`](agents/chatgpt/README.md)
+- Adapters:
+  - Claude Code — [`CLAUDE.md`](CLAUDE.md), `.claude/commands/`
+  - Codex CLI — [`AGENTS.md`](AGENTS.md), [`agents/codex/`](agents/codex/)
+  - Generic ChatGPT-style local agent — [`agents/chatgpt/README.md`](agents/chatgpt/README.md) (thin wrapper over the Codex adapter)
 - CLI: `scripts/harness.py`
+- Smoke test: `bash scripts/smoke.sh`
 
 ## Two-repo layout
 
@@ -65,9 +69,12 @@ GitHub Actions in the site repo then deploys the committed static files to Pages
 ## Agent adapters
 
 - Claude Code: [`CLAUDE.md`](CLAUDE.md) and `.claude/commands/`
-- ChatGPT / Codex-style local agent: [`agents/chatgpt/README.md`](agents/chatgpt/README.md)
+- Codex CLI: [`AGENTS.md`](AGENTS.md) and [`agents/codex/`](agents/codex/)
+- Other ChatGPT-style local agents: [`agents/chatgpt/README.md`](agents/chatgpt/README.md) — a thin wrapper that delegates to the Codex adapter.
 
 Adapters should treat [`PROTOCOL.md`](PROTOCOL.md) as the source of truth for phases, artefacts, and publishing invariants.
+
+Before pointing a new adapter at the harness, run `bash scripts/smoke.sh` to confirm Python, pyyaml, markdown, and the CLI wiring all work in the local environment.
 
 ## Dependencies
 
