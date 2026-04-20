@@ -323,7 +323,7 @@ def index_href_for(lang: str, primary_lang: str) -> str:
     """Back-to-reports link pointing at the localized root index."""
     if lang == primary_lang:
         return "../index.html"
-    return f"../../{lang}/index.html"
+    return "../../index.html" if lang == "en" else f"../../{lang}/index.html"
 
 
 def brand_href_for(lang: str, primary_lang: str) -> str:
