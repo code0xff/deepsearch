@@ -42,7 +42,7 @@ else
 fi
 
 log "init-report"
-python3 scripts/harness.py init-report "$TOPIC" --slug "$SLUG" --langs en --site "$TMP_SITE"
+python3 scripts/harness.py init-report "$TOPIC" --slug "$SLUG" --mono --site "$TMP_SITE"
 
 # Populate the scaffold with minimal valid content so validate-report
 # and render-report both succeed.

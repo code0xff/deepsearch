@@ -58,6 +58,9 @@ outputs of a report; it must stay committed in the site repo.
     - a draft at `<slug>/draft.<code>.md`
     - a translated `title_<code>` and `subtitle_<code>` in meta.yaml
     - a rendered `<slug>/<code>/index.html`
+- New reports should default to a bilingual scaffold across every
+  supported language. Single-language reports should be an explicit
+  choice, not the accidental default.
 - English is the canonical primary for new reports unless the topic is
   written in another supported language. When `meta.lang = en` the
   English rendered page is the "/" canonical URL and Korean lives at
@@ -172,16 +175,21 @@ The provider-neutral CLI entrypoint is `python3 scripts/harness.py`. Every subco
 
 Commands:
 
-- `init-report <topic> [--slug ...] [--lang ko|en] [--langs en,ko] [--site ...]`
+- `init-report <topic> [--slug ...] [--lang ko|en] [--langs en,ko] [--mono] [--site ...]`
 - `validate-report <slug> [--site ...]`
 - `render-report <slug> [--site ...]`
 - `render-index [--site ...]`
 - `prepublish-check <slug> [--site ...]`
 
-`init-report --langs en,ko` scaffolds both `draft.md` and `draft.ko.md`
-plus the nested `title_ko`/`subtitle_ko` placeholders. `render-report`
-iterates over every language in `meta.langs` and writes one HTML file
-per language.
+`init-report` scaffolds every supported language by default, ordered with
+the primary language first. With the current supported set, that means a
+Korean-primary report defaults to `langs: [ko, en]` and an
+English-primary report defaults to `langs: [en, ko]`.
+
+`init-report --mono` is the explicit single-language escape hatch.
+`init-report --langs ...` narrows or reorders the scaffolded languages
+when needed. `render-report` iterates over every language in
+`meta.langs` and writes one HTML file per language.
 
 These commands perform deterministic harness tasks and should be preferred over agent-specific ad hoc shell sequences.
 

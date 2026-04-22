@@ -49,6 +49,8 @@ The harness writes every report artefact into the site repo's checkout and never
 ```bash
 python3 scripts/harness.py init-report "your topic here"
 #  → creates $DEEPSEARCH_SITE/<slug>/ scaffold
+#  → by default scaffolds every supported language with the detected
+#    primary first; pass --mono for an explicit single-language report
 python3 scripts/harness.py validate-report <slug>
 python3 scripts/harness.py render-report  <slug>
 python3 scripts/harness.py render-index

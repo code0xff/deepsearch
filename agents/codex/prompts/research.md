@@ -26,6 +26,7 @@ equivalent of `.claude/commands/research.md`.
    ```bash
    python3 scripts/harness.py init-report "<topic>"
    # or: ... init-report "<topic>" --langs en,ko
+   # or: ... init-report "<topic>" --mono
    ```
 4. State the plan to the user (slug, language(s), expected sections) in
    ≤ 3 sentences.

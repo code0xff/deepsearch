@@ -58,13 +58,17 @@ approval/sandbox settings.
 ## Codex workflow
 
 1. Read `PROTOCOL.md` before starting.
-2. Initialize a report scaffold. Single-language:
+2. Initialize a report scaffold. Default bilingual:
    ```bash
    python3 scripts/harness.py init-report "<topic>"
    ```
-   Bilingual:
+   Explicit bilingual ordering:
    ```bash
    python3 scripts/harness.py init-report "<topic>" --langs en,ko
+   ```
+   Explicit single-language:
+   ```bash
+   python3 scripts/harness.py init-report "<topic>" --mono
    ```
 3. Write `working/outline.md` and `working/claims.md`.
 4. Gather sources using the phase prompts in
@@ -101,8 +105,10 @@ approval/sandbox settings.
   multiple turns, drop a short `working/resume.md` note before yielding
   so the next turn can pick up cleanly.
 - Prefer the harness CLI for scaffold, validation, and render tasks.
-- Keep the report language aligned with the user's topic language unless
-  the user specifies otherwise.
+- Keep the primary language aligned with the user's topic language unless
+  the user specifies otherwise, but default the scaffold to bilingual
+  output across the supported languages unless the user explicitly wants
+  a single-language report.
 - Do not rely on Claude-only tools. The phase prompt files under
   `agents/codex/prompts/` translate every Claude-named tool (WebSearch,
   WebFetch, TaskCreate) into Codex-available equivalents.

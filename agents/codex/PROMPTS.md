@@ -25,11 +25,14 @@ environment variable `DEEPSEARCH_SITE` pointing at the sibling site repo.
 Read `PROTOCOL.md`, then:
 
 ```bash
-# Single-language:
+# Default bilingual:
 python3 scripts/harness.py init-report "<topic>"
 
-# Bilingual (primary + alternates scaffolded in one shot):
+# Explicit bilingual ordering:
 python3 scripts/harness.py init-report "<topic>" --langs en,ko
+
+# Explicit single-language:
+python3 scripts/harness.py init-report "<topic>" --mono
 ```
 
 After initialization, inspect `$DEEPSEARCH_SITE/<slug>/meta.yaml` and

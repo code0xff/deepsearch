@@ -80,6 +80,15 @@ def parse_langs(raw: str | None, primary: str) -> list[str]:
     return ordered
 
 
+def default_langs(primary: str) -> list[str]:
+    """Default scaffold policy: include every supported language.
+
+    The primary language stays first so draft.md remains the primary draft
+    and alternate outputs render under <slug>/<code>/.
+    """
+    return [primary, *[lang for lang in SUPPORTED_LANGS if lang != primary]]
+
+
 def resolve_lang_list(meta: dict) -> tuple[str, list[str]]:
     primary = str(meta.get("lang") or "en")
     declared = meta.get("langs")
@@ -274,11 +283,18 @@ def prepublish_check(site: Path, slug: str) -> tuple[bool, list[str]]:
 def cmd_init_report(args: argparse.Namespace) -> int:
     topic = args.topic.strip()
     slug = args.slug or slugify(topic)
-    lang = args.lang or ("en" if args.langs else detect_lang(topic))
+    lang = args.lang or detect_lang(topic)
     if slug.lower() in RESERVED_SLUGS:
         return fail(f"slug {slug!r} is reserved at the site repo root; pass --slug to override")
+    if args.langs and args.mono:
+        return fail("pass either --langs or --mono, not both")
     try:
-        langs = parse_langs(args.langs, lang)
+        if args.mono:
+            langs = [lang]
+        elif args.langs:
+            langs = parse_langs(args.langs, lang)
+        else:
+            langs = default_langs(lang)
     except ValueError as exc:
         return fail(str(exc))
     site = resolve_site(args.site)
@@ -365,9 +381,11 @@ def build_parser() -> argparse.ArgumentParser:
     init_ap.add_argument("topic")
     init_ap.add_argument("--slug")
     init_ap.add_argument("--lang", choices=list(SUPPORTED_LANGS),
-                         help="Primary language (default: auto-detect from topic, or 'en' if --langs is set)")
+                         help="Primary language (default: auto-detect from topic)")
     init_ap.add_argument("--langs",
-                         help=f"Comma-separated list of languages to scaffold (default: primary only). Supported: {','.join(SUPPORTED_LANGS)}")
+                         help=f"Comma-separated list of languages to scaffold (default: all supported languages, ordered with the primary first). Supported: {','.join(SUPPORTED_LANGS)}")
+    init_ap.add_argument("--mono", action="store_true",
+                         help="Scaffold only the primary language. By default init-report scaffolds every supported language.")
     init_ap.add_argument("--title")
     init_ap.add_argument("--subtitle")
     add_site_arg(init_ap)
