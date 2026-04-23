@@ -18,7 +18,7 @@ except ImportError:
 
 from paths import REPO, RESERVED_SLUGS, add_site_arg, parse_meta_fallback, resolve_site, site_reports
 from render_index import render_index
-from render_report import render_report
+from render_report import ABSTRACT_HEADING_RE, render_report, split_abstract
 
 SOURCE_TYPES = {"paper", "primary", "technical", "news", "blog"}
 LANG_RE = re.compile(r"[가-힣]")
@@ -213,6 +213,15 @@ def validate_report(site: Path, slug: str) -> tuple[bool, list[str]]:
         if not text.strip():
             errors.append(f"{lp.relative_to(site)} is empty")
             continue
+        if not ABSTRACT_HEADING_RE.search(text):
+            errors.append(
+                f"{lp.relative_to(site)}: missing abstract heading "
+                "(use `## Abstract` or `## 초록`; parenthetical bilingual variants are also accepted)"
+            )
+        else:
+            abstract_md, _ = split_abstract(text)
+            if not abstract_md.strip():
+                errors.append(f"{lp.relative_to(site)}: abstract section is empty")
         for sid in FOOTNOTE_RE.findall(text):
             if sid not in sources:
                 errors.append(f"{lp.relative_to(site)}: unresolved citation [^{sid}]")

@@ -92,6 +92,8 @@ Write `draft.md` (primary) and `draft.<code>.md` for each alternate in
 
 - Prose paragraphs with inline footnote refs `[^s01]` keyed to
   `sources.jsonl`.
+- Use an explicit abstract H2 the renderer can recognize:
+  `## Abstract` for English drafts, `## 초록` for Korean drafts.
 - A claim is not cited ⇒ it is not in the draft.
 - Conflicting claims: present both with attribution.
 - Single-source factual claims: append ` _(unverified — single source)_`.

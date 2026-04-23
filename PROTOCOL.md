@@ -124,6 +124,10 @@ Minimum sourcing:
 
 ### Draft
 - Write `draft.md` with inline `[^sNN]` footnote refs.
+- Give the abstract an explicit H2 heading that the renderer can extract:
+  prefer `## Abstract` in English drafts and `## 초록` in Korean drafts.
+  Parenthetical bilingual variants are accepted for backward
+  compatibility, but the simple exact headings are the house style.
 - A claim without a source does not enter the draft.
 - Single-source factual claims must be marked `_(unverified — single source)_`.
 - Conflicts must be represented, not silently resolved.

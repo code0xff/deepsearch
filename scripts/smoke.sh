@@ -52,7 +52,7 @@ cat > "$REPORT_DIR/working/sources.jsonl" <<'JSON'
 JSON
 
 cat > "$REPORT_DIR/draft.md" <<'MD'
-## Abstract
+## Abstract (초록)
 
 Smoke fixture body to exercise the renderer[^s01].
 

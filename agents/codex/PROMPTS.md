@@ -71,6 +71,8 @@ Write `draft.md` (primary language) and `draft.<code>.md` for each
 alternate language in `meta.langs`. Rules:
 
 - Inline footnote refs `[^s01]` keyed to `working/sources.jsonl`.
+- Use `## Abstract` in English drafts and `## 초록` in Korean drafts so
+  the renderer extracts the abstract section reliably.
 - No source → no sentence.
 - Single-source factual claims: append ` _(unverified — single source)_`.
 - Conflicting sources: present both with attribution, do not resolve

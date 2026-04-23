@@ -239,6 +239,10 @@ def minimal_markdown(text: str) -> str:
 # ---------- footnotes + abstract ----------
 
 FOOTNOTE_RE = re.compile(r"\[\^([a-zA-Z0-9_]+)\]")
+ABSTRACT_HEADING_RE = re.compile(
+    r"^##\s+(?:Abstract|초록)(?:\s*\((?:Abstract|초록)\))?\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def rewrite_footnotes(html_body: str, sources: dict[str, dict]) -> tuple[str, list[str]]:
@@ -258,9 +262,8 @@ def rewrite_footnotes(html_body: str, sources: dict[str, dict]) -> tuple[str, li
 
 
 def split_abstract(md_body: str) -> tuple[str, str]:
-    """Return (abstract_md, rest_md). Abstract is first H2 named Abstract/초록."""
-    pattern = re.compile(r"^##\s+(?:Abstract|초록)\s*$", re.IGNORECASE | re.MULTILINE)
-    m = pattern.search(md_body)
+    """Return (abstract_md, rest_md). Abstract is first recognized abstract H2."""
+    m = ABSTRACT_HEADING_RE.search(md_body)
     if not m:
         return "", md_body
     start = m.end()
