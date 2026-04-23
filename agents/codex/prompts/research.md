@@ -20,8 +20,9 @@ equivalent of `.claude/commands/research.md`.
 2. If `$DEEPSEARCH_SITE/<slug>/` already exists, stop and ask the user
    whether to resume, overwrite, or pick a new slug. When resuming,
    reload `meta.yaml`, `working/outline.md`, `working/claims.md`,
-   `working/sources.jsonl`, `working/gaps.md` and continue from the
-   earliest unfinished phase.
+   `working/sources.jsonl`, `working/gaps.md`,
+   `working/uncertainties.md` and continue from the earliest unfinished
+   phase.
 3. Otherwise initialise the scaffold:
    ```bash
    python3 scripts/harness.py init-report "<topic>"
@@ -71,6 +72,12 @@ After each sweep, update `working/gaps.md`:
 - Sections with no primary source
 - Open questions that surfaced during reading
 
+Also update `working/uncertainties.md`:
+
+- Claims that still rest mainly on project-hosted or vendor-led evidence
+- What seems immature or likely to change
+- What public evidence still does not establish confidently
+
 ## Phase 4 — Loop
 
 Repeat Phase 3 until `gaps.md` is empty. Hard ceiling: 6 gather
@@ -88,6 +95,9 @@ Write `draft.md` (primary) and `draft.<code>.md` for each alternate in
 - A claim is not cited ⇒ it is not in the draft.
 - Conflicting claims: present both with attribution.
 - Single-source factual claims: append ` _(unverified — single source)_`.
+- If the strongest support is still project-hosted, vendor-led, or
+  clearly immature, qualify the claim in prose and reflect that in the
+  Limitations section.
 
 Abstract last; write it after the body so it reflects what was said.
 

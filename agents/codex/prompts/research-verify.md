@@ -1,8 +1,9 @@
 # Verification lane — Codex
 
 Self-critique pass: audit the draft for unsupported claims, weak
-reasoning, dead links, and missing counter-evidence. Codex equivalent
-of `.claude/commands/research-verify.md`.
+reasoning, dead links, source monoculture, unspoken uncertainty, and
+missing counter-evidence. Codex equivalent of
+`.claude/commands/research-verify.md`.
 
 > Arguments: `<slug>` — the report slug inside `$DEEPSEARCH_SITE`.
 
@@ -40,7 +41,18 @@ weaken/remove the sentence. Do the same check for each
 - Claims about "most people" / "everyone" / "no one" — these are
   almost always false.
 
-## 4. Missing counter-evidence
+## 4. Source diversity and independence
+
+- Are the major conclusions supported only by project-hosted or
+  vendor-hosted sources?
+- For emerging standards, protocols, platforms, or ecosystems: did you
+  include at least one independent interpretation, external adoption
+  signal, or public implementation wrinkle where such evidence exists?
+- If independent evidence is sparse, say so explicitly in
+  `working/uncertainties.md` and make sure the draft does not overstate
+  confidence.
+
+## 5. Missing counter-evidence
 
 For each major finding, actively search for dissenting views via one
 more web or papers sweep targeted at the opposite claim. If
@@ -48,16 +60,26 @@ counter-evidence exists and is not represented, the draft is
 incomplete — add it to `gaps.md` and mark this critique item
 **must-fix**.
 
-## 5. Tone and structure
+## 6. Uncertainty and certainty calibration
+
+- Does the draft distinguish between established facts, early signals,
+  project-hosted claims, and unresolved questions?
+- Does the Limitations section honestly reflect both `gaps.md` and
+  `uncertainties.md`?
+- If the topic is new or still moving quickly, are the conclusions
+  appropriately scoped instead of written as settled fact?
+
+## 7. Tone and structure
 
 - Is the Abstract faithful to the body?
-- Does the Limitations section honestly reflect `gaps.md`?
+- Does the Limitations section honestly reflect `gaps.md` and
+  `uncertainties.md`?
 - Any emoji, marketing voice, or hedging? Strip.
 - Any paragraph longer than ~6 sentences? Split.
 - For bilingual reports: do the alternate-language drafts say the same
   thing as the primary, or have they drifted?
 
-## 6. Must-fix vs nit
+## 8. Must-fix vs nit
 
 Classify each finding as **must-fix** or **nit**. The report does not
 ship with any must-fix open.

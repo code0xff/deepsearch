@@ -40,7 +40,7 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
    - `/research-web`
    - `/research-papers`
    - `/research-github`
-5. Keep `working/gaps.md` current until the gap list is empty or the user accepts the remaining gaps.
+5. Keep `working/gaps.md` current until the gap list is empty or the user accepts the remaining gaps. Also maintain `working/uncertainties.md` for claims that are still immature, vendor-stated, or likely to shift.
 6. Draft **every** language declared in `meta.langs`:
    - `draft.md` — primary (English for new reports unless the user specified otherwise)
    - `draft.<code>.md` — each alternate, plus `title_<code>` / `subtitle_<code>` in meta.yaml
@@ -73,6 +73,7 @@ Claude must maintain the exact report artefacts defined in `PROTOCOL.md`:
 - `working/claims.md`
 - `working/sources.jsonl` (shared across all languages)
 - `working/gaps.md`
+- `working/uncertainties.md`
 - `working/critique.md`
 
 ## Publishing

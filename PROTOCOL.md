@@ -38,6 +38,7 @@ Paths in this document written as `<slug>/…` are relative to the site repo roo
       claims.md
       sources.jsonl
       gaps.md
+      uncertainties.md
       critique.md
 ```
 
@@ -102,6 +103,10 @@ The loop ends only when `working/gaps.md` is empty or the user explicitly accept
 - Collect sources into `working/sources.jsonl`.
 - Use the right lane for the claim: web, papers, or GitHub/code.
 - Check off claims only when the minimum source threshold is satisfied.
+- For emerging standards, vendor-led ecosystems, or rapidly moving
+  topics, try to gather both project-hosted sources and at least one
+  independent interpretation or public adoption signal for each major
+  conclusion when such evidence exists.
 
 Minimum sourcing:
 - factual / quantitative claim: at least 2 independent sources
@@ -111,17 +116,29 @@ Minimum sourcing:
 ### Gap-analyze
 - Update `working/gaps.md` after each gather pass.
 - Track under-sourced claims, conflicting evidence, missing primary sources, and unresolved questions.
+- Maintain `working/uncertainties.md` as a separate register for what is
+  still immature, vendor-stated, weakly evidenced, or likely to change.
+  `gaps.md` is about what is still missing before the draft can ship;
+  `uncertainties.md` is about what remains epistemically shaky even when
+  the draft is publishable.
 
 ### Draft
 - Write `draft.md` with inline `[^sNN]` footnote refs.
 - A claim without a source does not enter the draft.
 - Single-source factual claims must be marked `_(unverified — single source)_`.
 - Conflicts must be represented, not silently resolved.
+- If the strongest support for a claim is still project-hosted,
+  vendor-led, or clearly immature, qualify it in prose (for example
+  `_(early signal)_` or `_(vendor-stated)_`) and surface the limitation
+  honestly.
 
 ### Critique
 - Write `working/critique.md`.
 - The report does not ship with open `must-fix` items.
-- Critique should check unsupported claims, citation integrity, weak reasoning, and missing counter-evidence.
+- Critique should check unsupported claims, citation integrity, weak
+  reasoning, source diversity and independence, missing
+  counter-evidence, and whether the draft honestly surfaces important
+  uncertainties.
 
 ### Publish
 - `validate-report` must pass.

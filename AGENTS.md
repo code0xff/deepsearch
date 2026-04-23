@@ -76,7 +76,8 @@ approval/sandbox settings.
    GitHub lanes). The per-lane Codex prompts live in
    [`agents/codex/prompts/`](agents/codex/prompts/).
 5. Keep `working/gaps.md` current until it is empty or the user accepts
-   the remaining gaps.
+   the remaining gaps. Also maintain `working/uncertainties.md` for
+   what remains weakly evidenced, vendor-stated, or likely to change.
 6. Draft **every** language declared in `meta.langs`:
    - `draft.md` — primary (English for new reports unless the user
      specified otherwise).
@@ -124,6 +125,7 @@ Codex must maintain the exact report artefacts defined in `PROTOCOL.md`:
 - `working/claims.md`
 - `working/sources.jsonl` (shared across all languages)
 - `working/gaps.md`
+- `working/uncertainties.md`
 - `working/critique.md`
 
 ## Publishing

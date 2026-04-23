@@ -331,6 +331,7 @@ def cmd_init_report(args: argparse.Namespace) -> int:
         "working/claims.md": "",
         "working/sources.jsonl": "",
         "working/gaps.md": "",
+        "working/uncertainties.md": "",
         "working/critique.md": "",
     }.items():
         (root / rel).write_text(content, encoding="utf-8")

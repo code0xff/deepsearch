@@ -42,6 +42,9 @@ produce inside the same directory:
   Introduction, Limitations, References.
 - `working/claims.md` — 3–8 testable claims per section, each with
   `kind` (factual / interpretive / technical) and a `needs` note.
+- `working/uncertainties.md` — a running note of what is still weakly
+  evidenced, vendor-stated, or likely to change even if the draft ends
+  up publishable.
 
 ## 2. Gather
 
@@ -53,7 +56,8 @@ Route each claim through the lane it best matches and append results to
 - Academic lane — `prompts/research-papers.md`
 - GitHub/code lane — `prompts/research-github.md`
 
-Update `working/gaps.md` after every gather sweep.
+Update `working/gaps.md` and `working/uncertainties.md` after every
+gather sweep.
 
 ## 3. Loop
 

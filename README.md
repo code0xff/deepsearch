@@ -57,7 +57,7 @@ python3 scripts/harness.py render-index
 python3 scripts/harness.py prepublish-check <slug>
 ```
 
-Draft writing, source gathering, and critique happen directly in the site repo's checkout. Once validation and critique are clean, commit and push **from the site repo**:
+Draft writing, source gathering, uncertainty tracking, and critique happen directly in the site repo's checkout. Once validation and critique are clean, commit and push **from the site repo**:
 
 ```bash
 cd "$DEEPSEARCH_SITE"
