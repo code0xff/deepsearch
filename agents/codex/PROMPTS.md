@@ -49,6 +49,8 @@ produce inside the same directory:
 Drafts cite sources inline with `[^sNN]`. Do not add a manual
 `## References` / `## 참고문헌` section to `draft*.md`; the renderer
 generates the bibliography from `working/sources.jsonl`.
+Do not append markdown footnote definitions like `[^s01]: ...` to the
+draft body either.
 
 ## 2. Gather
 

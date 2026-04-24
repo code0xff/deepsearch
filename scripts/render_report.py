@@ -244,9 +244,10 @@ ABSTRACT_HEADING_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 MANUAL_REFERENCES_HEADING_RE = re.compile(
-    r"^(##|###)\s+(?:References|참고문헌)\s*$",
+    r"^(##|###)\s+(?:(?:\d+(?:\.\d+)*)\.?\s+)?(?:References|참고문헌)\s*$",
     re.IGNORECASE | re.MULTILINE,
 )
+FOOTNOTE_DEF_RE = re.compile(r"^\[\^([a-zA-Z0-9_]+)\]:\s+", re.MULTILINE)
 
 
 def rewrite_footnotes(html_body: str, sources: dict[str, dict]) -> tuple[str, list[str]]:
@@ -297,6 +298,28 @@ def strip_manual_references(md_body: str) -> str:
     if re.search(r"^##\s+", trailing, re.MULTILINE):
         return md_body
     return md_body[:last.start()].rstrip()
+
+
+def strip_manual_footnote_defs(md_body: str) -> str:
+    """Drop a trailing block of manual footnote definitions.
+
+    House-style reports keep bibliography data in ``working/sources.jsonl``.
+    A leftover markdown footnote-definition tail like ``[^s01]: ...`` should not
+    render into the article body.
+    """
+    m = FOOTNOTE_DEF_RE.search(md_body)
+    if not m:
+        return md_body
+    tail = md_body[m.start():]
+    for line in tail.splitlines():
+        if not line.strip():
+            continue
+        if FOOTNOTE_DEF_RE.match(line):
+            continue
+        if line.startswith("    ") or line.startswith("\t"):
+            continue
+        return md_body
+    return md_body[:m.start()].rstrip()
 
 
 def render_references(order: list[str], sources: dict[str, dict], strings: dict[str, str]) -> str:
@@ -441,7 +464,7 @@ def render_one(
     draft_p = draft_path(report_dir, lang, primary_lang)
     if not draft_p.exists():
         raise SystemExit(f"error: missing draft for lang={lang} at {draft_p}")
-    draft = strip_manual_references(draft_p.read_text(encoding="utf-8"))
+    draft = strip_manual_footnote_defs(strip_manual_references(draft_p.read_text(encoding="utf-8")))
     strings = chrome(lang)
 
     abstract_md, body_md = split_abstract(draft)

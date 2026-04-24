@@ -97,6 +97,8 @@ Write `draft.md` (primary) and `draft.<code>.md` for each alternate in
 - Do not add a manual `## References` / `## 참고문헌` section to the
   draft body; the renderer generates the bibliography from
   `working/sources.jsonl`.
+- Do not append markdown footnote definitions like `[^s01]: ...`; keep
+  only inline refs in the prose.
 - A claim is not cited ⇒ it is not in the draft.
 - Conflicting claims: present both with attribution.
 - Single-source factual claims: append ` _(unverified — single source)_`.

@@ -20,6 +20,7 @@ from paths import REPO, RESERVED_SLUGS, add_site_arg, parse_meta_fallback, resol
 from render_index import render_index
 from render_report import (
     ABSTRACT_HEADING_RE,
+    FOOTNOTE_DEF_RE,
     MANUAL_REFERENCES_HEADING_RE,
     render_report,
     split_abstract,
@@ -233,6 +234,11 @@ def validate_report(site: Path, slug: str) -> tuple[bool, list[str]]:
         if MANUAL_REFERENCES_HEADING_RE.search(text):
             errors.append(
                 f"{lp.relative_to(site)}: remove manual `## References`/`## 참고문헌`; "
+                "the bibliography is auto-generated from `working/sources.jsonl`"
+            )
+        if FOOTNOTE_DEF_RE.search(text):
+            errors.append(
+                f"{lp.relative_to(site)}: remove manual `[^sNN]: ...` footnote definitions; "
                 "the bibliography is auto-generated from `working/sources.jsonl`"
             )
         errors.extend(check_math_delimiters(text, lp.relative_to(site).as_posix()))
