@@ -94,6 +94,9 @@ Write `draft.md` (primary) and `draft.<code>.md` for each alternate in
   `sources.jsonl`.
 - Use an explicit abstract H2 the renderer can recognize:
   `## Abstract` for English drafts, `## 초록` for Korean drafts.
+- Do not add a manual `## References` / `## 참고문헌` section to the
+  draft body; the renderer generates the bibliography from
+  `working/sources.jsonl`.
 - A claim is not cited ⇒ it is not in the draft.
 - Conflicting claims: present both with attribution.
 - Single-source factual claims: append ` _(unverified — single source)_`.

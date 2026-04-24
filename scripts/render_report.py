@@ -243,6 +243,10 @@ ABSTRACT_HEADING_RE = re.compile(
     r"^##\s+(?:Abstract|초록)(?:\s*\((?:Abstract|초록)\))?\s*$",
     re.IGNORECASE | re.MULTILINE,
 )
+MANUAL_REFERENCES_HEADING_RE = re.compile(
+    r"^(##|###)\s+(?:References|참고문헌)\s*$",
+    re.IGNORECASE | re.MULTILINE,
+)
 
 
 def rewrite_footnotes(html_body: str, sources: dict[str, dict]) -> tuple[str, list[str]]:
@@ -275,6 +279,24 @@ def split_abstract(md_body: str) -> tuple[str, str]:
         abstract_md = md_body[start:].strip()
         rest = md_body[:m.start()]
     return abstract_md, rest.strip()
+
+
+def strip_manual_references(md_body: str) -> str:
+    """Drop a trailing manual references section from the draft body.
+
+    Reports cite sources inline via ``[^sNN]`` and the template renders a
+    normalized bibliography from ``working/sources.jsonl``. If authors leave a
+    final ``## References`` / ``## 참고문헌`` section in the draft, it would
+    duplicate the template-rendered bibliography.
+    """
+    matches = list(MANUAL_REFERENCES_HEADING_RE.finditer(md_body))
+    if not matches:
+        return md_body
+    last = matches[-1]
+    trailing = md_body[last.end():]
+    if re.search(r"^##\s+", trailing, re.MULTILINE):
+        return md_body
+    return md_body[:last.start()].rstrip()
 
 
 def render_references(order: list[str], sources: dict[str, dict], strings: dict[str, str]) -> str:
@@ -419,7 +441,7 @@ def render_one(
     draft_p = draft_path(report_dir, lang, primary_lang)
     if not draft_p.exists():
         raise SystemExit(f"error: missing draft for lang={lang} at {draft_p}")
-    draft = draft_p.read_text(encoding="utf-8")
+    draft = strip_manual_references(draft_p.read_text(encoding="utf-8"))
     strings = chrome(lang)
 
     abstract_md, body_md = split_abstract(draft)

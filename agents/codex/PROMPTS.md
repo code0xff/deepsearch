@@ -46,6 +46,10 @@ produce inside the same directory:
   evidenced, vendor-stated, or likely to change even if the draft ends
   up publishable.
 
+Drafts cite sources inline with `[^sNN]`. Do not add a manual
+`## References` / `## 참고문헌` section to `draft*.md`; the renderer
+generates the bibliography from `working/sources.jsonl`.
+
 ## 2. Gather
 
 Route each claim through the lane it best matches and append results to

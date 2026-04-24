@@ -128,6 +128,9 @@ Minimum sourcing:
   prefer `## Abstract` in English drafts and `## 초록` in Korean drafts.
   Parenthetical bilingual variants are accepted for backward
   compatibility, but the simple exact headings are the house style.
+- Do not add a manual `## References` / `## 참고문헌` section to
+  `draft*.md`. The renderer builds the bibliography from
+  `working/sources.jsonl`.
 - A claim without a source does not enter the draft.
 - Single-source factual claims must be marked `_(unverified — single source)_`.
 - Conflicts must be represented, not silently resolved.

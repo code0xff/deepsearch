@@ -18,7 +18,12 @@ except ImportError:
 
 from paths import REPO, RESERVED_SLUGS, add_site_arg, parse_meta_fallback, resolve_site, site_reports
 from render_index import render_index
-from render_report import ABSTRACT_HEADING_RE, render_report, split_abstract
+from render_report import (
+    ABSTRACT_HEADING_RE,
+    MANUAL_REFERENCES_HEADING_RE,
+    render_report,
+    split_abstract,
+)
 
 SOURCE_TYPES = {"paper", "primary", "technical", "news", "blog"}
 LANG_RE = re.compile(r"[가-힣]")
@@ -225,6 +230,11 @@ def validate_report(site: Path, slug: str) -> tuple[bool, list[str]]:
         for sid in FOOTNOTE_RE.findall(text):
             if sid not in sources:
                 errors.append(f"{lp.relative_to(site)}: unresolved citation [^{sid}]")
+        if MANUAL_REFERENCES_HEADING_RE.search(text):
+            errors.append(
+                f"{lp.relative_to(site)}: remove manual `## References`/`## 참고문헌`; "
+                "the bibliography is auto-generated from `working/sources.jsonl`"
+            )
         errors.extend(check_math_delimiters(text, lp.relative_to(site).as_posix()))
         # Alternate-language drafts need a translated title to avoid falling back
         # to the primary title in the header/index.
