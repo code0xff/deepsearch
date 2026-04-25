@@ -61,6 +61,25 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
 - Use the filesystem as working memory.
 - Prefer the harness CLI for scaffold, validation, and render tasks.
 - Keep the primary language aligned with the user's topic language unless the user specifies otherwise, but default the scaffold to bilingual output unless the user explicitly wants a single-language report.
+- `init-report` writes one-line placeholder content into every scaffold file
+  except `working/sources.jsonl` (which stays empty because a placeholder line
+  would be invalid JSONL). When you draft over a scaffold file, use `Write`
+  directly — Claude Code's "Read before Write" check is satisfied by the
+  placeholder, so you do not need to issue a `Read` first.
+
+## Common WebFetch failure modes
+
+- IACR ePrint (`eprint.iacr.org`) and Springer (`link.springer.com`) often
+  return `403`/`303` to scripted PDF fetches. Prefer the project blog
+  (e.g. `simplex.blog`), an HTML mirror, or the Semantic Scholar landing
+  page; cite the IACR/Springer URL even when extraction came from the
+  mirror so the bibliography points at the canonical record.
+- Large academic PDFs (>~700KB) frequently come back as raw binary that
+  the WebFetch summarizer cannot parse. Treat that as a fetch failure and
+  switch to an HTML mirror or a write-up that quotes the paper.
+- GitHub blob URLs are fine for source-code reads, but for repository
+  state (releases, discussions, README badges) prefer the rendered
+  `github.com/<owner>/<repo>` landing page over deep-linked blob URLs.
 
 ## Artifact contract
 

@@ -349,15 +349,23 @@ def cmd_init_report(args: argparse.Namespace) -> int:
     })
     (root / "working").mkdir(parents=True)
     (root / "meta.yaml").write_text(dump_yaml(meta), encoding="utf-8")
+    # Scaffold files are intentionally written with one-line placeholders so
+    # adapters that gate Write on a prior Read (e.g. Claude Code) do not have
+    # to round-trip through an empty Read on every scaffold file. sources.jsonl
+    # stays empty because a placeholder line would be invalid JSONL.
     for l in langs:
-        draft_path(root, l, lang).write_text("", encoding="utf-8")
+        if l == lang:
+            placeholder = f"<!-- replace with {lang} draft -->\n"
+        else:
+            placeholder = f"<!-- replace with {l} draft -->\n"
+        draft_path(root, l, lang).write_text(placeholder, encoding="utf-8")
     for rel, content in {
-        "working/outline.md": "",
-        "working/claims.md": "",
+        "working/outline.md": "<!-- replace with outline -->\n",
+        "working/claims.md": "<!-- replace with claims -->\n",
         "working/sources.jsonl": "",
-        "working/gaps.md": "",
-        "working/uncertainties.md": "",
-        "working/critique.md": "",
+        "working/gaps.md": "<!-- replace with gaps -->\n",
+        "working/uncertainties.md": "<!-- replace with uncertainties -->\n",
+        "working/critique.md": "<!-- replace with critique -->\n",
     }.items():
         (root / rel).write_text(content, encoding="utf-8")
     print(f"initialized {root}")
