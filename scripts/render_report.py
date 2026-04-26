@@ -159,6 +159,15 @@ def try_markdown(text: str) -> str:
         )
         return md.convert(text)
     except ImportError:
+        if not getattr(try_markdown, "_warned", False):
+            print(
+                "warning: Python 'markdown' package not installed; using minimal "
+                "renderer. GFM-style tables are supported, but smarty / footnote "
+                "/ toc extensions are not. Install with `pipx install markdown` "
+                "or `apt install python3-markdown` for full fidelity.",
+                file=sys.stderr,
+            )
+            try_markdown._warned = True  # type: ignore[attr-defined]
         return minimal_markdown(text)
 
 
@@ -175,6 +184,18 @@ def inline(s: str) -> str:
     s = ITALIC.sub(lambda m: f"<em>{m.group(1)}</em>", s)
     s = LINK.sub(lambda m: f'<a href="{m.group(2)}">{m.group(1)}</a>', s)
     return s
+
+
+TABLE_ROW_RE = re.compile(r"^\s*\|(.+)\|\s*$")
+TABLE_SEP_RE = re.compile(
+    r"^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$"
+)
+
+
+def _split_table_row(line: str) -> list[str]:
+    """Split a `| a | b | c |` row into ['a', 'b', 'c']."""
+    inner = line.strip().strip("|")
+    return [c.strip() for c in inner.split("|")]
 
 
 def minimal_markdown(text: str) -> str:
@@ -197,7 +218,10 @@ def minimal_markdown(text: str) -> str:
             out.append("</ul>")
             in_list = False
 
-    for line in lines:
+    i = 0
+    n = len(lines)
+    while i < n:
+        line = lines[i]
         if line.startswith("```"):
             if in_code:
                 out.append("<pre><code>" + html.escape("\n".join(code_buf)) + "</code></pre>")
@@ -207,13 +231,45 @@ def minimal_markdown(text: str) -> str:
                 flush_para()
                 flush_list()
                 in_code = True
+            i += 1
             continue
         if in_code:
             code_buf.append(line)
+            i += 1
             continue
         if not line.strip():
             flush_para()
             flush_list()
+            i += 1
+            continue
+        # GFM-style table: header row + separator + 0+ body rows.
+        if (
+            TABLE_ROW_RE.match(line)
+            and i + 1 < n
+            and TABLE_SEP_RE.match(lines[i + 1])
+        ):
+            flush_para()
+            flush_list()
+            header_cells = _split_table_row(line)
+            i += 2  # consume header and separator
+            body_rows: list[list[str]] = []
+            while i < n and TABLE_ROW_RE.match(lines[i]):
+                body_rows.append(_split_table_row(lines[i]))
+                i += 1
+            parts = ["<table>", "<thead><tr>"]
+            for cell in header_cells:
+                parts.append(f"<th>{inline(cell)}</th>")
+            parts.append("</tr></thead>")
+            if body_rows:
+                parts.append("<tbody>")
+                for row in body_rows:
+                    parts.append("<tr>")
+                    for cell in row:
+                        parts.append(f"<td>{inline(cell)}</td>")
+                    parts.append("</tr>")
+                parts.append("</tbody>")
+            parts.append("</table>")
+            out.append("".join(parts))
             continue
         m = re.match(r"^(#{1,6})\s+(.*)$", line)
         if m:
@@ -221,6 +277,7 @@ def minimal_markdown(text: str) -> str:
             flush_list()
             level = len(m.group(1))
             out.append(f"<h{level}>{inline(m.group(2).strip())}</h{level}>")
+            i += 1
             continue
         if line.lstrip().startswith(("- ", "* ")):
             flush_para()
@@ -229,8 +286,10 @@ def minimal_markdown(text: str) -> str:
                 in_list = True
             item = line.lstrip()[2:]
             out.append(f"<li>{inline(item)}</li>")
+            i += 1
             continue
         buf.append(line.strip())
+        i += 1
     flush_para()
     flush_list()
     return "\n".join(out)
