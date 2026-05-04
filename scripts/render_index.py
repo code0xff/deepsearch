@@ -7,8 +7,9 @@ One index is emitted per supported display language:
 - <site>/ko/index.html    — Korean
 
 Sort order on each index prefers reports available in the display language,
-then falls back to other reports. Within each group: date descending, slug
-descending.
+then falls back to other reports. Within each group: date descending, then
+newer report directory mtime (so latest-created reports appear first when
+dates are identical).
 """
 from __future__ import annotations
 
@@ -109,6 +110,9 @@ def collect(reports_dir: Path) -> list[dict]:
         if status not in ("ready", "published"):
             continue
         meta["slug"] = meta.get("slug") or child.name
+        # Tie-breaker for same-day reports: prefer the most recently
+        # created/updated report directory first on the index.
+        meta["__mtime_ns"] = child.stat().st_mtime_ns
         meta["__primary_lang"], meta["__langs"] = resolve_lang_list(meta)
         entries.append(meta)
     return entries
@@ -118,9 +122,11 @@ def sort_for(entries: list[dict], display_lang: str) -> list[dict]:
     def key(m: dict) -> tuple:
         has_display = display_lang in m["__langs"]
         date = str(m.get("date") or "")
+        mtime_ns = int(m.get("__mtime_ns") or 0)
         slug = m["slug"]
-        # Higher priority first: has_display (True before False), then newer date.
-        return (0 if has_display else 1, -_date_rank(date), slug)
+        # Higher priority first: has_display, then newer date, then newer mtime.
+        # Keep slug as final deterministic tie-breaker.
+        return (0 if has_display else 1, -_date_rank(date), -mtime_ns, slug)
     return sorted(entries, key=key)
 
 
