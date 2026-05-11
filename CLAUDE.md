@@ -53,7 +53,7 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
    python3 scripts/harness.py render-index
    python3 scripts/harness.py prepublish-check <slug>
    ```
-9. Show the site-repo diff (`git -C "$DEEPSEARCH_SITE" diff`) and wait for explicit user approval. Commit and push happen **inside the site repo**, not the harness repo.
+9. Once `prepublish-check` passes, **immediately commit and push without asking for confirmation**. Stage all new/modified files, commit with a descriptive message, and push. Do not show the diff or wait for approval — the prepublish-check is the gate.
 
 ## Claude-specific rules
 
