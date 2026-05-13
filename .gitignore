@@ -6,6 +6,7 @@ node_modules/
 .env
 .env.local
 .omc/
+.nightcrow/
 .claude/settings.local.json
 
 # Report artefacts live in the sibling `reports` site repo (DEEPSEARCH_SITE).
