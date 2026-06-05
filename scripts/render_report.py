@@ -28,7 +28,15 @@ try:
 except ImportError:
     yaml = None  # Fallback parser below.
 
-from paths import REPO, add_site_arg, parse_meta_fallback, resolve_site, site_reports
+from paths import (
+    REPO,
+    add_site_arg,
+    harness_repo_url,
+    parse_meta_fallback,
+    resolve_site,
+    site_base_url,
+    site_reports,
+)
 
 TEMPLATE = REPO / "assets" / "report-template.html"
 
@@ -38,6 +46,8 @@ TEMPLATE = REPO / "assets" / "report-template.html"
 I18N: dict[str, dict[str, str]] = {
     "en": {
         "brand": "Deepsearch",
+        "og_site_name": "Deepsearch",
+        "github_label": "Deepsearch on GitHub",
         "kicker": "Deepsearch report",
         "published": "Published",
         "tags": "Tags",
@@ -62,6 +72,8 @@ I18N: dict[str, dict[str, str]] = {
     },
     "ko": {
         "brand": "Deepsearch",
+        "og_site_name": "Deepsearch",
+        "github_label": "GitHub에서 Deepsearch 보기",
         "kicker": "Deepsearch 리포트",
         "published": "발행일",
         "tags": "태그",
@@ -489,11 +501,19 @@ def build_site_header(page_lang: str, primary_lang: str, langs: list[str], brand
         f'    <a class="site-header__lang" href="{html.escape(alt_href)}" '
         f'hreflang="{html.escape(alt_lang)}">{html.escape(alt_label)}</a>\n'
     )
+    gh_link = (
+        f'    <a class="site-header__gh" href="{html.escape(harness_repo_url())}" '
+        f'target="_blank" rel="noopener" aria-label="{html.escape(strings["github_label"])}" '
+        f'title="{html.escape(strings["github_label"])}">\n'
+        '      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.575.106.785-.25.785-.556 0-.274-.01-1.001-.015-1.965-3.196.695-3.87-1.54-3.87-1.54-.523-1.33-1.277-1.684-1.277-1.684-1.044-.713.08-.699.08-.699 1.155.082 1.763 1.186 1.763 1.186 1.026 1.758 2.693 1.25 3.35.956.103-.743.401-1.25.73-1.538-2.553-.29-5.236-1.276-5.236-5.68 0-1.255.448-2.281 1.184-3.085-.119-.29-.513-1.46.112-3.044 0 0 .966-.31 3.165 1.178a11.02 11.02 0 0 1 5.762 0c2.198-1.489 3.163-1.178 3.163-1.178.626 1.584.232 2.754.114 3.044.737.804 1.183 1.83 1.183 3.085 0 4.415-2.687 5.387-5.247 5.671.412.355.78 1.056.78 2.128 0 1.537-.014 2.776-.014 3.154 0 .309.207.668.79.555A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"/></svg>\n'
+        '    </a>\n'
+    )
     return (
         '<header class="site-header">\n'
         f'  <a class="site-header__brand" href="{html.escape(brand_href)}">{html.escape(strings["brand"])}</a>\n'
         '  <div class="site-header__controls">\n'
         f'{lang_toggle}'
+        f'{gh_link}'
         f'    <button class="site-header__theme" type="button" aria-label="{html.escape(strings["theme_label"])}" data-theme-toggle>\n'
         '      <svg class="site-header__theme-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>\n'
         '    </button>\n'
@@ -555,12 +575,19 @@ def render_one(
         report_is_alt=(lang != primary_lang),
     )
     hreflang_links = build_hreflang(lang, primary_lang, langs)
+    canonical_url = (
+        f"{site_base_url()}/{slug}/"
+        if lang == primary_lang
+        else f"{site_base_url()}/{slug}/{lang}/"
+    )
 
     rendered = replace_template(template, {
         "LANG": lang,
         "TITLE": html.escape(title),
         "SUBTITLE": html.escape(subtitle),
         "DESCRIPTION": html.escape(subtitle or title),
+        "CANONICAL_URL": html.escape(canonical_url),
+        "OG_SITE_NAME": html.escape(strings["og_site_name"]),
         "DATE": html.escape(date_str),
         "TAGS": html.escape(tags_text),
         "STATUS": html.escape(str(meta.get("status") or "draft")),

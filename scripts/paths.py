@@ -22,6 +22,8 @@ RESERVED_SLUGS = frozenset({
     "ko",
     "reports",
     "readme",
+    "robots",
+    "sitemap",
     ".git",
     ".github",
     ".nojekyll",
@@ -35,6 +37,24 @@ def resolve_site(cli_site: str | None = None) -> Path:
     if env:
         return Path(env).expanduser().resolve()
     return (REPO.parent / "reports").resolve()
+
+
+def site_base_url() -> str:
+    """Absolute public base URL of the deployed site (no trailing slash).
+
+    Used for canonical links, Open Graph URLs, and the sitemap. Override with
+    the ``DEEPSEARCH_SITE_URL`` environment variable for a custom domain.
+    """
+    return os.environ.get(
+        "DEEPSEARCH_SITE_URL", "https://code0xff.github.io/reports"
+    ).rstrip("/")
+
+
+def harness_repo_url() -> str:
+    """Public URL of the Deepsearch harness repository (for the GitHub link)."""
+    return os.environ.get(
+        "DEEPSEARCH_REPO_URL", "https://github.com/code0xff/deepsearch"
+    ).rstrip("/")
 
 
 def site_reports(site: Path) -> Path:
