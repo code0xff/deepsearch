@@ -39,6 +39,8 @@ INDEX_I18N: dict[str, dict[str, str]] = {
         "subtitle": "A collection of deep-research reports — one topic at a time, sources preserved.",
         "count_label": "reports",
         "updated_label": "Updated",
+        "search_placeholder": "Search reports by title, subtitle, or tag…",
+        "search_no_results": "No reports match your search.",
         "empty": '      <li><em>No reports published yet.</em></li>',
         "brand": "Deepsearch",
         "theme_label": "Toggle theme",
@@ -55,6 +57,8 @@ INDEX_I18N: dict[str, dict[str, str]] = {
         "subtitle": "한 주제씩, 출처를 보존한 심층 리서치 리포트 모음.",
         "count_label": "개의 리포트",
         "updated_label": "업데이트",
+        "search_placeholder": "제목·부제·태그로 리포트 검색…",
+        "search_no_results": "검색과 일치하는 리포트가 없습니다.",
         "empty": '      <li><em>아직 발행된 리포트가 없습니다.</em></li>',
         "brand": "Deepsearch",
         "theme_label": "테마 전환",
@@ -169,8 +173,12 @@ def render_item(m: dict, display_lang: str) -> str:
         tags = [t.strip() for t in re.split(r"[,\s]+", tags) if t.strip()]
     tag_txt = " · ".join(html.escape(t) for t in tags) if tags else ""
     href = href_for_report(m, display_lang)
+    # Lowercased haystack for the client-side filter (title + subtitle + tags).
+    search_blob = " ".join(
+        part for part in [title, subtitle, " ".join(str(t) for t in tags)] if part
+    ).lower()
     parts = [
-        '      <li>',
+        f'      <li data-search="{html.escape(search_blob)}">',
         f'        <div class="entry-date">{html.escape(date)}</div>' if date else "",
         f'        <p class="entry-title"><a href="{html.escape(href)}">{html.escape(title)}</a></p>',
     ]
@@ -263,15 +271,20 @@ TEMPLATE = """<!doctype html>
     <h1>{{HEADING}}</h1>
     <p class="subtitle">{{SUBTITLE}}</p>
     <div class="meta">
-      <span><strong>{{COUNT}}</strong> {{COUNT_LABEL}}</span>
+      <span><strong id="result-count" data-total="{{COUNT}}">{{COUNT}}</strong> {{COUNT_LABEL}}</span>
       <span><strong>{{UPDATED_LABEL}}</strong> {{UPDATED}}</span>
     </div>
   </header>
 
   <main>
-    <ul class="index-list">
+    <div class="index-search">
+      <svg class="index-search__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="search" id="report-search" class="index-search__input" placeholder="{{SEARCH_PLACEHOLDER}}" aria-label="{{SEARCH_PLACEHOLDER}}" aria-controls="index-list" autocomplete="off" spellcheck="false">
+    </div>
+    <ul class="index-list" id="index-list">
 {{ITEMS}}
     </ul>
+    <p class="index-no-results" id="index-no-results" hidden>{{SEARCH_NO_RESULTS}}</p>
   </main>
 </article>
 <footer class="site-footer">
@@ -291,6 +304,39 @@ TEMPLATE = """<!doctype html>
     document.documentElement.dataset.theme = next;
     try { localStorage.setItem('theme', next); } catch(e){}
   });
+})();
+</script>
+<script>
+(function(){
+  var input = document.getElementById('report-search');
+  var list = document.getElementById('index-list');
+  if(!input || !list) return;
+  var items = Array.prototype.slice.call(list.querySelectorAll('li[data-search]'));
+  var noResults = document.getElementById('index-no-results');
+  var count = document.getElementById('result-count');
+  var total = items.length;
+  function apply(){
+    var q = input.value.trim().toLowerCase();
+    var tokens = q ? q.split(/\s+/) : [];
+    var shown = 0;
+    for(var i=0;i<items.length;i++){
+      var hay = items[i].getAttribute('data-search') || '';
+      var match = true;
+      for(var t=0;t<tokens.length;t++){
+        if(hay.indexOf(tokens[t]) === -1){ match = false; break; }
+      }
+      items[i].hidden = !match;
+      if(match) shown++;
+    }
+    if(noResults) noResults.hidden = shown !== 0;
+    if(count) count.textContent = tokens.length ? shown : total;
+  }
+  input.addEventListener('input', apply);
+  // Escape clears the field.
+  input.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ input.value = ''; apply(); }
+  });
+  apply();
 })();
 </script>
 </body>
@@ -321,6 +367,8 @@ def render_one(entries: list[dict], site: Path, lang: str) -> Path:
         .replace("{{COUNT_LABEL}}", html.escape(strings["count_label"]))
         .replace("{{UPDATED_LABEL}}", html.escape(strings["updated_label"]))
         .replace("{{UPDATED}}", html.escape(updated))
+        .replace("{{SEARCH_PLACEHOLDER}}", html.escape(strings["search_placeholder"]))
+        .replace("{{SEARCH_NO_RESULTS}}", html.escape(strings["search_no_results"]))
         .replace("{{FOOTER_HARNESS}}", html.escape(strings["footer_harness"]))
         .replace("{{FOOTER_PAGES}}", html.escape(strings["footer_pages"]))
         .replace("{{ITEMS}}", items_html)
