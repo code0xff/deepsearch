@@ -41,6 +41,10 @@ INDEX_I18N: dict[str, dict[str, str]] = {
         "updated_label": "Updated",
         "search_placeholder": "Search reports by title, subtitle, or tag…",
         "search_no_results": "No reports match your search.",
+        "fav_filter_label": "Favorites",
+        "fav_no_results": "No favorites yet — tap the star on a report to save it.",
+        "fav_add_label": "Add to favorites",
+        "fav_remove_label": "Remove from favorites",
         "empty": '      <li><em>No reports published yet.</em></li>',
         "brand": "Deepsearch",
         "theme_label": "Toggle theme",
@@ -59,6 +63,10 @@ INDEX_I18N: dict[str, dict[str, str]] = {
         "updated_label": "업데이트",
         "search_placeholder": "제목·부제·태그로 리포트 검색…",
         "search_no_results": "검색과 일치하는 리포트가 없습니다.",
+        "fav_filter_label": "즐겨찾기",
+        "fav_no_results": "아직 즐겨찾기가 없습니다 — 리포트의 별을 눌러 저장하세요.",
+        "fav_add_label": "즐겨찾기 추가",
+        "fav_remove_label": "즐겨찾기 해제",
         "empty": '      <li><em>아직 발행된 리포트가 없습니다.</em></li>',
         "brand": "Deepsearch",
         "theme_label": "테마 전환",
@@ -164,6 +172,7 @@ def href_for_report(meta: dict, display_lang: str) -> str:
 
 
 def render_item(m: dict, display_lang: str) -> str:
+    strings = INDEX_I18N[display_lang]
     primary_lang = m["__primary_lang"]
     title = resolve_field(m, "title", display_lang, primary_lang) or m["slug"]
     subtitle = resolve_field(m, "subtitle", display_lang, primary_lang)
@@ -177,8 +186,20 @@ def render_item(m: dict, display_lang: str) -> str:
     search_blob = " ".join(
         part for part in [title, subtitle, " ".join(str(t) for t in tags)] if part
     ).lower()
+    slug = html.escape(str(m["slug"]))
+    fav_add = html.escape(strings["fav_add_label"])
+    fav_remove = html.escape(strings["fav_remove_label"])
+    star_svg = (
+        '<svg class="entry-fav__icon" viewBox="0 0 24 24" width="20" height="20" '
+        'fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" '
+        'aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.24 1.03 5.96L12 '
+        '17.97 6.62 19.8l1.03-5.96L3.3 9.6l6-.9z"/></svg>'
+    )
     parts = [
-        f'      <li data-search="{html.escape(search_blob)}">',
+        f'      <li data-search="{html.escape(search_blob)}" data-slug="{slug}">',
+        f'        <button class="entry-fav" type="button" data-fav-toggle '
+        f'aria-pressed="false" aria-label="{fav_add}" title="{fav_add}" '
+        f'data-label-add="{fav_add}" data-label-remove="{fav_remove}">{star_svg}</button>',
         f'        <div class="entry-date">{html.escape(date)}</div>' if date else "",
         f'        <p class="entry-title"><a href="{html.escape(href)}">{html.escape(title)}</a></p>',
     ]
@@ -249,7 +270,7 @@ def build_site_header(lang: str) -> str:
     )
 
 
-TEMPLATE = """<!doctype html>
+TEMPLATE = r"""<!doctype html>
 <html lang="{{LANG}}">
 <head>
 <meta charset="utf-8">
@@ -280,11 +301,15 @@ TEMPLATE = """<!doctype html>
     <div class="index-search">
       <svg class="index-search__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
       <input type="search" id="report-search" class="index-search__input" placeholder="{{SEARCH_PLACEHOLDER}}" aria-label="{{SEARCH_PLACEHOLDER}}" aria-controls="index-list" autocomplete="off" spellcheck="false">
+      <button type="button" id="fav-filter" class="index-favfilter" data-fav-filter aria-pressed="false" hidden>
+        <svg class="index-favfilter__icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6 .9-4.35 4.24 1.03 5.96L12 17.97 6.62 19.8l1.03-5.96L3.3 9.6l6-.9z"/></svg>
+        <span>{{FAV_FILTER_LABEL}}</span>
+      </button>
     </div>
     <ul class="index-list" id="index-list">
 {{ITEMS}}
     </ul>
-    <p class="index-no-results" id="index-no-results" hidden>{{SEARCH_NO_RESULTS}}</p>
+    <p class="index-no-results" id="index-no-results" data-msg-search="{{SEARCH_NO_RESULTS}}" data-msg-fav="{{FAV_NO_RESULTS}}" hidden>{{SEARCH_NO_RESULTS}}</p>
   </main>
 </article>
 <footer class="site-footer">
@@ -314,25 +339,87 @@ TEMPLATE = """<!doctype html>
   var items = Array.prototype.slice.call(list.querySelectorAll('li[data-search]'));
   var noResults = document.getElementById('index-no-results');
   var count = document.getElementById('result-count');
+  var favBtn = document.getElementById('fav-filter');
   var total = items.length;
+  var KEY = 'deepsearch:favorites';
+
+  // Favorites are persisted as a slug array in localStorage, shared across the
+  // EN and KO index pages (same origin, language-independent slugs).
+  var favs = {};
+  try {
+    var stored = JSON.parse(localStorage.getItem(KEY) || '[]');
+    if(Array.isArray(stored)) stored.forEach(function(s){ favs[s] = true; });
+  } catch(e){}
+  function persist(){
+    var arr = []; for(var k in favs){ if(favs[k]) arr.push(k); }
+    try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch(e){}
+  }
+  function favCount(){ var n = 0; for(var k in favs){ if(favs[k]) n++; } return n; }
+
+  var favOnly = false;
+
+  function setStar(li, on){
+    var btn = li.querySelector('[data-fav-toggle]');
+    if(!btn) return;
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    var lbl = on ? (btn.getAttribute('data-label-remove') || 'Remove from favorites')
+                 : (btn.getAttribute('data-label-add') || 'Add to favorites');
+    btn.setAttribute('aria-label', lbl);
+    btn.setAttribute('title', lbl);
+  }
+  for(var i=0;i<items.length;i++){
+    setStar(items[i], !!favs[items[i].getAttribute('data-slug')]);
+  }
+
   function apply(){
     var q = input.value.trim().toLowerCase();
     var tokens = q ? q.split(/\s+/) : [];
     var shown = 0;
     for(var i=0;i<items.length;i++){
-      var hay = items[i].getAttribute('data-search') || '';
+      var li = items[i];
+      var hay = li.getAttribute('data-search') || '';
       var match = true;
       for(var t=0;t<tokens.length;t++){
         if(hay.indexOf(tokens[t]) === -1){ match = false; break; }
       }
-      items[i].hidden = !match;
+      if(match && favOnly && !favs[li.getAttribute('data-slug')]) match = false;
+      li.hidden = !match;
       if(match) shown++;
     }
-    if(noResults) noResults.hidden = shown !== 0;
-    if(count) count.textContent = tokens.length ? shown : total;
+    var filtering = tokens.length > 0 || favOnly;
+    if(count) count.textContent = filtering ? shown : total;
+    if(noResults){
+      noResults.hidden = shown !== 0;
+      var key = (favOnly && favCount() === 0) ? 'data-msg-fav' : 'data-msg-search';
+      var msg = noResults.getAttribute(key);
+      if(msg) noResults.textContent = msg;
+    }
   }
+
+  // Toggle a single favorite (event-delegated so it survives any re-render).
+  list.addEventListener('click', function(e){
+    var btn = e.target.closest ? e.target.closest('[data-fav-toggle]') : null;
+    if(!btn || !list.contains(btn)) return;
+    e.preventDefault();
+    var li = btn.closest('li');
+    var slug = li.getAttribute('data-slug');
+    favs[slug] = !favs[slug];
+    setStar(li, !!favs[slug]);
+    persist();
+    apply();
+  });
+
+  // "Favorites only" filter (progressive enhancement: revealed only with JS).
+  if(favBtn){
+    favBtn.hidden = false;
+    favBtn.addEventListener('click', function(){
+      favOnly = !favOnly;
+      favBtn.setAttribute('aria-pressed', favOnly ? 'true' : 'false');
+      apply();
+    });
+  }
+
   input.addEventListener('input', apply);
-  // Escape clears the field.
   input.addEventListener('keydown', function(e){
     if(e.key === 'Escape'){ input.value = ''; apply(); }
   });
@@ -369,6 +456,8 @@ def render_one(entries: list[dict], site: Path, lang: str) -> Path:
         .replace("{{UPDATED}}", html.escape(updated))
         .replace("{{SEARCH_PLACEHOLDER}}", html.escape(strings["search_placeholder"]))
         .replace("{{SEARCH_NO_RESULTS}}", html.escape(strings["search_no_results"]))
+        .replace("{{FAV_FILTER_LABEL}}", html.escape(strings["fav_filter_label"]))
+        .replace("{{FAV_NO_RESULTS}}", html.escape(strings["fav_no_results"]))
         .replace("{{FOOTER_HARNESS}}", html.escape(strings["footer_harness"]))
         .replace("{{FOOTER_PAGES}}", html.escape(strings["footer_pages"]))
         .replace("{{ITEMS}}", items_html)
