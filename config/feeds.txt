@@ -1,0 +1,37 @@
+# Feeds polled by scripts/search_feeds.py.
+#
+# One URL per line; `#` starts a comment. Every entry here was probed and
+# returned 200 with a parseable RSS/Atom body on 2026-08-31. Re-probe before
+# adding: many publishers 403 scripted feed reads (Coinbase, Mastercard) or
+# have no feed at all (Anthropic, a16z, Visa), and a dead feed is skipped with
+# a warning rather than failing the run.
+#
+# Ordering is by how primary the source is. The point of this lane is to catch
+# an announcement from the publisher itself, hours before a search engine has
+# indexed the article about it.
+
+# --- Vendor and platform blogs (primary sources) ---
+https://stripe.com/blog/feed.rss
+https://blog.cloudflare.com/rss/
+https://openai.com/news/rss.xml
+# Note: this feed omits pubDate, so its items always come back with
+# "published": null and bypass the time window. Date them from the page.
+https://developers.googleblog.com/feeds/posts/default
+https://cloudblog.withgoogle.com/rss/
+
+# --- Spec and protocol repositories (primary sources) ---
+# GitHub serves an Atom feed for any repo's releases or default-branch
+# commits, and github.com is reachable from the cloud sandbox, so this is the
+# most reliable lane in the list. Add a repo as
+# https://github.com/<owner>/<repo>/releases.atom (or /commits/main.atom).
+https://github.com/coinbase/x402/releases.atom
+https://github.com/coinbase/x402/commits/main.atom
+https://github.com/google-agentic-commerce/AP2/releases.atom
+https://github.com/google-agentic-commerce/AP2/commits/main.atom
+https://github.com/modelcontextprotocol/modelcontextprotocol/releases.atom
+
+# --- Trade press (secondary, for independent confirmation) ---
+https://techcrunch.com/category/artificial-intelligence/feed/
+https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+https://venturebeat.com/category/ai/feed/
+https://arstechnica.com/ai/feed/

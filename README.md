@@ -63,6 +63,10 @@ python3 scripts/harness.py add-source <slug> \
 
 python3 scripts/harness.py status <slug>     # where does this report stand?
 python3 scripts/harness.py publish <slug>    # the whole publish gate
+
+python3 scripts/harness.py seen-urls <prefix> --last 14 --check "<url>"
+#  → for a standing brief: is this candidate already cited? compares
+#    canonical URLs, so utm tags and AMP mirrors do not slip past
 ```
 
 `publish` is `validate-report` → `render-report` → `render-index` →
@@ -80,13 +84,34 @@ git push
 
 GitHub Actions in the site repo then deploys the committed static files to Pages.
 
+## Where sources come from
+
+| Lane | Backend | Reaches |
+|------|---------|---------|
+| feeds | `search_feeds.py` (`config/feeds.txt`), `search_social.py` | Publisher newsrooms and developer blogs, repo release/commit feeds, Hacker News; Bluesky and Reddit with free credentials |
+| web | The agent's web search and fetch | Anything a search engine has indexed |
+| papers | `search_arxiv.py`, `search_semantic_scholar.py` | arXiv, Semantic Scholar |
+| github | `search_github.py` (`gh` CLI) | Repositories, code, issues |
+
+X/Twitter and LinkedIn are **not** read directly: X has had no free read tier
+since February 2026, and LinkedIn has no third-party API for public post
+search. Material from both arrives indirectly, through the coverage that
+quotes it — see [`PROTOCOL.md`](PROTOCOL.md) §4.1.
+
+Add a publisher by appending its feed URL to `config/feeds.txt`. Probe it
+first; many publishers 403 scripted feed reads or have no feed at all. Any
+repo's releases are a feed:
+`https://github.com/<owner>/<repo>/releases.atom`.
+
 ## Standing briefs
 
 Besides one-off deep dives, the harness supports **standing briefs** — a
 recurring, time-boxed pass over a beat the site already covers, keyed
 `<prefix>-<YYYY-MM-DD>`. A brief scouts for news *before* it scaffolds, drops
-anything already cited by the last three briefs, and exits without publishing
-on a quiet day, so the index never collects empty entries. Rules live in
+anything the last fourteen briefs already cited, groups what is left by event
+so one announcement covered by three outlets counts once, and exits without
+publishing on a quiet day — so the index never collects empty or repetitive
+entries. Rules live in
 [`PROTOCOL.md`](PROTOCOL.md) §2.1; the prompts are
 `.claude/commands/research-daily.md` and
 `agents/codex/prompts/research-daily.md`.

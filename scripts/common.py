@@ -12,6 +12,7 @@ import html
 import json
 import os
 import re
+import urllib.parse
 from pathlib import Path
 
 from paths import harness_repo_url
@@ -299,3 +300,73 @@ def site_header_html(
         '  </div>\n'
         '</header>'
     )
+
+
+# ---------- URL identity ----------
+
+# Query parameters that identify the referrer or campaign rather than the
+# document. Two URLs differing only in these point at the same page, so they
+# are dropped before comparing.
+TRACKING_PARAMS = frozenset({
+    "at_campaign", "at_medium", "cmpid", "fbclid", "gbraid", "gclid",
+    "igshid", "mc_cid", "mc_eid", "mkt_tok", "ncid", "ref", "ref_src",
+    "ref_url", "s", "source", "spm", "t", "trk", "twclid", "vero_conv",
+    "vero_id", "wbraid", "wt_mc", "yclid", "__twitter_impression",
+})
+
+# Host prefixes that serve the same document as the bare host.
+MIRROR_HOST_PREFIXES = ("www.", "m.", "amp.", "mobile.")
+
+
+def canonical_url(url: str) -> str:
+    """Reduce a URL to a comparison key identifying the underlying document.
+
+    Exact string matching lets the same article back into a report three
+    times — once from a search result with `?utm_source=`, once from an AMP
+    mirror, once with a trailing slash. Everything stripped here is
+    referrer or presentation metadata, never content:
+
+    >>> canonical_url("https://www.Example.com/a/?utm_source=x&id=2#top")
+    'example.com/a?id=2'
+    >>> canonical_url("http://example.com/a/amp/") == canonical_url("https://example.com/a")
+    True
+
+    The result is a comparison key, not a fetchable URL — the scheme is
+    dropped because http/https variants of one page are the same source.
+    Returns the input lowercased and stripped if it cannot be parsed.
+    """
+    raw = (url or "").strip()
+    if not raw:
+        return ""
+    try:
+        parts = urllib.parse.urlsplit(raw)
+    except ValueError:
+        return raw.lower()
+    if not parts.netloc:
+        return raw.lower().rstrip("/")
+
+    host = parts.netloc.lower()
+    if "@" in host:  # userinfo is not part of document identity
+        host = host.rsplit("@", 1)[1]
+    if host.endswith(":80") or host.endswith(":443"):
+        host = host.rsplit(":", 1)[0]
+    for prefix in MIRROR_HOST_PREFIXES:
+        if host.startswith(prefix) and len(host) > len(prefix) + 3:
+            host = host[len(prefix):]
+            break
+
+    path = parts.path
+    for amp_suffix in ("/amp/", "/amp"):
+        if path.endswith(amp_suffix):
+            path = path[: -len(amp_suffix)]
+            break
+    path = path.rstrip("/")
+
+    kept = [
+        (k, v)
+        for k, v in urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+        if k.lower() not in TRACKING_PARAMS and not k.lower().startswith("utm_")
+    ]
+    query = urllib.parse.urlencode(sorted(kept))
+
+    return f"{host}{path}" + (f"?{query}" if query else "")

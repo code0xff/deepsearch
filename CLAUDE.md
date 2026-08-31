@@ -37,9 +37,16 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
    ```
 3. Write `working/outline.md` and `working/claims.md`.
 4. Gather sources via:
+   - `/research-feeds` — publisher RSS/Atom and Hacker News, from `config/feeds.txt`
    - `/research-web`
    - `/research-papers`
    - `/research-github`
+
+   The feeds lane leads on fast-moving topics: search only returns what is
+   already indexed, while a feed carries the announcement immediately. It is
+   also how X/LinkedIn material reaches the harness — indirectly, through the
+   publisher's own post, since neither platform is readable directly
+   (`PROTOCOL.md` §4.1).
 
    Every lane appends through the CLI, never by editing the JSONL by hand:
    ```bash
@@ -69,8 +76,10 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
 `/research-daily <slug-prefix> <standing topic>` is the recurring variant of
 `/research`, defined in `PROTOCOL.md` §2.1. It is written to run **unattended**
 on a schedule, so it differs from the main loop in four ways: it scouts for news
-before scaffolding, drops candidates whose URLs appear in the last three briefs,
-exits without publishing when fewer than three new items survive, and commits
+before scaffolding, drops candidates whose canonical URLs appear in the last
+fourteen briefs, groups the survivors by event so one announcement covered by
+three outlets counts once, exits without publishing when fewer than three items
+survive, and commits
 and pushes on a clean publish gate without asking. Re-running it on a date that
 already has a brief is a no-op.
 
@@ -91,6 +100,11 @@ It is also the command a scheduled cloud routine invokes; see
 - Those placeholders are also a publish gate: `prepublish-check` rejects a
   report whose `working/` files still contain them. Write every phase file
   for real, or the report cannot ship.
+- Running a standing brief? `python3 scripts/harness.py seen-urls <prefix>
+  --last 14 --check "<url>"` classifies candidates as `seen` or `new` before
+  you spend a fetch on them. It compares canonical URLs, so a `utm_` tag or an
+  AMP mirror cannot smuggle a duplicate through — but it cannot tell that two
+  different articles cover the same event, which stays your job.
 - Resuming a report? Run `python3 scripts/harness.py status <slug>` first.
   One call reports languages, source count and next id, claim progress,
   which working files are unwritten, which drafts are stale, and the

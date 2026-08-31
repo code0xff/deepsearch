@@ -97,10 +97,14 @@ runs the same seven phases and every invariant in §3, with four changes:
 
 - **Scout before scaffolding.** Gather candidates into a scratch list *before*
   `init-report`, so a day with no news leaves no directory behind.
-- **Novelty is a gate, not a preference.** Collect the `url` set from the three
-  most recent briefs sharing the slug prefix and drop any candidate already in
-  it. Under **3** surviving items, the run exits without publishing. Padding a
-  brief with background or already-covered stories is a protocol violation.
+- **Novelty is a gate, not a preference**, enforced at two levels. First,
+  `seen-urls <prefix> --last 14` collects the canonical URLs of the fourteen
+  most recent briefs in the series; any candidate already there is dropped.
+  Second, the survivors are grouped by the *event* they describe, because one
+  announcement written up by three outlets is one item — each group keeps its
+  most primary source and the rest become corroboration. Under **3** surviving
+  groups, the run exits without publishing. Padding a brief with background or
+  already-covered stories is a protocol violation.
 - **Two gather sweeps, not six.** Whatever is still thin after the second sweep
   goes to `gaps.md` and the Limitations section. A brief ships same-day.
 - **Idempotent.** A brief is keyed `<prefix>-<YYYY-MM-DD>` and the date comes
@@ -128,7 +132,7 @@ re-deriving it, which is what keeps them short.
 - Collect sources into `working/sources.jsonl` via
   `harness.py add-source`, which assigns ids and validates the schema.
   Do not hand-append lines.
-- Use the right lane for the claim: web, papers, or GitHub/code.
+- Use the right lane for the claim: feeds, web, papers, or GitHub/code.
 - Check off claims only when the minimum source threshold is satisfied.
 - For emerging standards, vendor-led ecosystems, or rapidly moving
   topics, try to gather both project-hosted sources and at least one
@@ -210,6 +214,28 @@ Allowed `type` values:
 
 If the source is access-limited, set `"access_limited": true` and `quote` may be null. Otherwise `quote` is required.
 
+### 4.1 Collection lanes
+
+| Lane | Backend | Reaches |
+|------|---------|---------|
+| feeds | `search_feeds.py` (RSS/Atom in `config/feeds.txt`), `search_social.py` | Publisher newsrooms and developer blogs, repo release/commit feeds, Hacker News; Bluesky and Reddit with credentials |
+| web | The runtime's web search and fetch | Anything a search engine has indexed |
+| papers | `search_arxiv.py`, `search_semantic_scholar.py` | arXiv, Semantic Scholar |
+| github | `search_github.py` (`gh` CLI) | Repositories, code, issues |
+
+The feeds lane exists because search has a latency floor: it returns only what
+has already been indexed, which lags a publisher by hours to days. A feed
+carries the announcement immediately, and it is the primary artefact the news
+article will later cite.
+
+**X/Twitter and LinkedIn are not collected directly.** X has had no free read
+tier since February 2026, and LinkedIn offers no third-party API for public
+post search; scraping either is against the terms and unreliable from a
+datacenter address. Material from both is collected indirectly, through the
+coverage that quotes it — which is the better citation regardless. When a story
+exists only on one of those platforms, that is recorded as a gap, not worked
+around.
+
 ## 5. Trust hierarchy
 
 1. Peer-reviewed papers
@@ -252,6 +278,7 @@ Commands:
 - `prepublish-check <slug> [--site ...]`
 - `publish <slug> [--site ...]`
 - `status <slug> [--site ...]`
+- `seen-urls <prefix> [--last N] [--check URL ...] [--site ...]`
 - `doctor [--site ...]`
 
 `add-source` is the supported way to grow `working/sources.jsonl`. It
@@ -272,6 +299,17 @@ count and next id, checked/total claims, which working files are still
 placeholders, which drafts are rendered or stale, and the current
 publish-gate result. Use it to resume a report without re-reading its
 artefacts.
+
+`seen-urls` answers "have we already cited this?" across a standing brief
+series. It reduces both sides with `canonical_url` — lowercasing the host,
+dropping `www.`/`m.`/`amp.` prefixes, `utm_*` and other tracking parameters,
+AMP path suffixes, fragments and trailing slashes — so the same article does
+not re-enter a series because a newsletter added a campaign tag. The same
+canonicalisation backs `add-source`'s duplicate skip and `validate-report`'s
+duplicate warning, so all three agree on what counts as one source.
+
+Canonicalisation cannot see that two different articles cover one event.
+That is the agent's job in §2.1's grouping step, not the CLI's.
 
 `doctor` checks the runtime: Python version, whether `pyyaml` and
 `markdown` are importable, the site path, `assets/style.css`, the report

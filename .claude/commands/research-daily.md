@@ -31,18 +31,15 @@ successful outcomes, not failures.
 4. `python3 scripts/harness.py doctor` — confirm the site path and template
    resolve. If the site repo is missing, stop and report that; do not scaffold
    into the harness repo.
-5. **Build the dedupe corpus.** List previous briefs and read the most recent
-   three:
+5. **Build the dedupe corpus.** One call collects every URL the last fourteen
+   briefs cited, reduced to canonical form:
    ```bash
-   ls "$DEEPSEARCH_SITE" | grep "^<prefix>-" | sort | tail -3
+   python3 scripts/harness.py seen-urls <prefix> --last 14
    ```
-   For each, collect every `url` from `<brief>/working/sources.jsonl`:
-   ```bash
-   cat "$DEEPSEARCH_SITE"/<brief>/working/sources.jsonl | jq -r .url
-   ```
-   Hold that URL set in a scratch file. It is the *seen* set. Also skim the most
-   recent brief's `draft.md` so you know what was already said — a story that
-   only advanced cosmetically since yesterday is not news.
+   That is the *seen* set. Fourteen days, not three: a story that resurfaces a
+   week later is still not new. Also skim the most recent brief's `draft.md` so
+   you know what was already said — a story that only advanced cosmetically
+   since yesterday is not news.
 6. The site also holds long-form reports on this beat. `ls "$DEEPSEARCH_SITE"`
    and note the slugs adjacent to the topic; you will cross-link them in the
    draft rather than re-explaining background from scratch.
@@ -56,20 +53,35 @@ report directory.
    every variant to the window — the last **72 hours** (a 24h window drops
    weekend and holiday news; the URL dedupe from Phase 0 removes the overlap).
 2. Run the lanes, in this order of yield for a daily beat:
-   - `/research-web` — announcements, funding, pricing changes, launches, beat reporting
+   - `/research-feeds` — publisher RSS/Atom plus Hacker News. Fastest and most
+     primary: the vendor's own announcement, hours before it is indexed
+   - `/research-web` — beat reporting, analysis, and anything the feeds missed
    - `/research-github` — releases, spec commits, new repos, notable issues
-   - `/research-papers` — only when something genuinely landed; most days it is silent
+   - `/research-papers` — only when something genuinely landed; most days it is
+     silent, and in a sandbox that blocks arxiv.org it is unavailable entirely
 3. For each candidate, record url, title, publisher, and **publication date**
    into a scratch file. Drop it if:
-   - the URL is in the *seen* set from Phase 0, or
    - its publication date is outside the window, or
-   - it is a rewrite of a story a previous brief already carried, or
    - it is an SEO farm, an AI-generated summary page, or a press release with no
      substance behind it.
-4. **Quiet-day gate.** Count what survived. If **fewer than 3** items remain,
-   the day did not produce a brief. Print `quiet day: N new items, no brief` with
-   the one-line reason, and **stop without creating a report**. An empty index
-   entry is worse than no entry. Do not pad the count with background material,
+4. **Drop what has already been covered.** Check the survivors in one call:
+   ```bash
+   python3 scripts/harness.py seen-urls <prefix> --last 14 \
+     --check "<url>" --check "<url>" ...
+   ```
+   Every line marked `seen` is out. The comparison is on canonical URLs, so a
+   `utm_` tag, an AMP mirror, or a trailing slash cannot smuggle a duplicate
+   through.
+5. **Collapse each story to one item.** URL dedupe does not catch the common
+   case: Reuters, TechCrunch and The Verge all writing up one announcement is
+   *one* item, not three. Group the survivors by the underlying event, then for
+   each group keep the most primary source — the vendor post, the spec commit,
+   the filing — and demote the rest to corroboration for that same item. Count
+   groups, never articles.
+6. **Quiet-day gate.** Count the groups. If **fewer than 3** remain, the day did
+   not produce a brief. Print `quiet day: N new items, no brief` with the
+   one-line reason, and **stop without creating a report**. An empty index entry
+   is worse than no entry. Do not pad the count with background material,
    explainers, or stories you already covered.
 
 ## Phase 2 — Frame and claim-ify
@@ -174,6 +186,21 @@ once and retry. If it fails again, stop and report — never `--force`.
 
 Finish with a short report: slug, item count, source count, the Pages URL, and
 anything that went into `gaps.md`.
+
+## Sources this harness does not read directly
+
+- **X/Twitter.** No free read tier since February 2026, and scraping is both
+  against the terms and unreliable from a datacenter IP. Collect X material
+  *indirectly*: when a news article or blog post quotes a post, cite the
+  article, and link the post inline only as corroboration. Never reconstruct a
+  post you have not actually read, and never cite an X URL you could not fetch.
+- **LinkedIn.** No third-party API for public post search, and scraping is
+  blocked and against the terms. The company announcements that appear there
+  are published to a newsroom or developer blog at the same time; the feeds
+  lane reads those, and they are the better citation anyway.
+
+If the day's real story broke on one of these and nowhere else, that is a gap.
+Write it into `working/gaps.md` in those words rather than working around it.
 
 ## Execution discipline
 

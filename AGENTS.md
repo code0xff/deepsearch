@@ -72,8 +72,13 @@ approval/sandbox settings.
    ```
 3. Write `working/outline.md` and `working/claims.md`.
 4. Gather sources using the phase prompts in
-   [`agents/codex/PROMPTS.md`](agents/codex/PROMPTS.md) (web / papers /
-   GitHub lanes). The per-lane Codex prompts live in
+   [`agents/codex/PROMPTS.md`](agents/codex/PROMPTS.md) (feeds / web /
+   papers / GitHub lanes). The feeds lane leads on fast-moving topics —
+   search returns only what is already indexed, a feed carries the
+   announcement immediately — and it is how X/LinkedIn material reaches
+   the harness at all, indirectly (`PROTOCOL.md` §4.1).
+
+   The per-lane Codex prompts live in
    [`agents/codex/prompts/`](agents/codex/prompts/). Append through the
    CLI rather than editing the JSONL by hand:
    ```bash
@@ -110,8 +115,9 @@ approval/sandbox settings.
 `agents/codex/prompts/research-daily.md` is the recurring variant of the full
 run, defined in `PROTOCOL.md` §2.1. It is written for **unattended** execution
 on a schedule: it scouts for news before scaffolding, drops candidates whose
-URLs appear in the last three briefs, exits without publishing when fewer than
-three new items survive, and — because no one is watching — commits and pushes
+canonical URLs appear in the last fourteen briefs, groups the survivors by
+event so one announcement covered by three outlets counts once, exits without
+publishing when fewer than three items survive, and — because no one is watching — commits and pushes
 on a clean publish gate without the step-9 approval above. Re-running it on a
 date that already has a brief is a no-op.
 

@@ -18,6 +18,7 @@ from common import (
     RESERVED_SLUGS,
     SOURCE_TYPES,
     SUPPORTED_LANGS,
+    canonical_url,
     draft_path,
     dump_meta,
     iter_report_dirs,
@@ -237,12 +238,14 @@ def validate_report(site: Path, slug: str) -> tuple[list[str], list[str]]:
     seen_urls: dict[str, str] = {}
     for sid, source in sources.items():
         errors.extend(validate_source_record(source, sid))
-        url = str(source.get("url") or "")
-        if url:
-            if url in seen_urls:
-                warnings.append(f"{sid}: duplicate url, already cited as {seen_urls[url]}")
+        # Compare canonical forms: the same article arriving once with a utm
+        # tag and once from an AMP mirror is one source, not two.
+        key = canonical_url(str(source.get("url") or ""))
+        if key:
+            if key in seen_urls:
+                warnings.append(f"{sid}: duplicate url, already cited as {seen_urls[key]}")
             else:
-                seen_urls[url] = sid
+                seen_urls[key] = sid
 
     stale = stale_source_ids(sources)
     if stale:
@@ -532,7 +535,7 @@ def cmd_add_source(args: argparse.Namespace) -> int:
             print(f"- {err}")
         return fail(f"{sources_path.relative_to(site)} has parse errors; fix them first")
 
-    by_url = {str(rec.get("url") or ""): sid for sid, rec in existing.items()}
+    by_url = {canonical_url(str(rec.get("url") or "")): sid for sid, rec in existing.items()}
     added: list[tuple[str, dict]] = []
     errors: list[str] = []
 
@@ -542,8 +545,9 @@ def cmd_add_source(args: argparse.Namespace) -> int:
             continue
         record = dict(record)
         url = str(record.get("url") or "")
-        if url and url in by_url and not args.allow_duplicate:
-            print(f"skip: {url} already present as {by_url[url]}")
+        url_key = canonical_url(url)
+        if url_key and url_key in by_url and not args.allow_duplicate:
+            print(f"skip: {url} already present as {by_url[url_key]}")
             continue
         sid = str(record.get("id") or "")
         if not sid:
@@ -561,8 +565,8 @@ def cmd_add_source(args: argparse.Namespace) -> int:
             print(f"! {sid}: accessed {record['accessed']} is already older than "
                   f"{STALE_SOURCE_DAYS} days")
         added.append((sid, record))
-        if url:
-            by_url[url] = sid
+        if url_key:
+            by_url[url_key] = sid
 
     if errors:
         print_findings(errors, [])
@@ -634,6 +638,50 @@ def cmd_status(args: argparse.Namespace) -> int:
     print(f"\nprepublish: {'PASS' if not errors else f'{len(errors)} error(s)'}"
           f"{f', {len(warnings)} warning(s)' if warnings else ''}")
     print_findings(errors, warnings)
+    return 0
+
+
+def cmd_seen_urls(args: argparse.Namespace) -> int:
+    """Report which URLs a standing brief has already cited.
+
+    A daily brief is only worth publishing if it carries news the previous
+    briefs did not, and comparing raw URL strings is not enough: the same
+    article arrives with a `utm_source` tag one day and from an AMP mirror
+    the next. Both sides are reduced with `canonical_url` so the comparison
+    is on document identity.
+
+    Without --check, prints the canonical keys. With --check, classifies
+    each candidate as `seen` (naming the brief and source that cited it) or
+    `new`, which is what a scout pass actually needs.
+    """
+    site = resolve_site(args.site)
+    reports = site_reports(site)
+    briefs = [d for d in iter_report_dirs(reports) if d.name.startswith(args.prefix)]
+    briefs = briefs[-args.last:] if args.last > 0 else briefs
+
+    # canonical url -> "<slug>:<source id>" of the first brief that cited it
+    seen: dict[str, str] = {}
+    for brief in briefs:
+        sources, _ = load_sources(brief / "working" / "sources.jsonl")
+        for sid, source in sources.items():
+            key = canonical_url(str(source.get("url") or ""))
+            if key:
+                seen.setdefault(key, f"{brief.name}:{sid}")
+
+    print(
+        f"scanned {len(briefs)} brief(s) matching {args.prefix!r}, {len(seen)} distinct url(s)",
+        file=sys.stderr,
+    )
+
+    if not args.check:
+        for key in sorted(seen):
+            print(key)
+        return 0
+
+    for url in args.check:
+        key = canonical_url(url)
+        where = seen.get(key)
+        print(f"seen {url} ({where})" if where else f"new  {url}")
     return 0
 
 
@@ -746,6 +794,18 @@ def build_parser() -> argparse.ArgumentParser:
     status_ap.add_argument("slug")
     add_site_arg(status_ap)
     status_ap.set_defaults(func=cmd_status)
+
+    seen_urls_ap = sub.add_parser(
+        "seen-urls",
+        help="List or check the URLs a standing brief's previous editions already cited",
+    )
+    seen_urls_ap.add_argument("prefix", help="Slug prefix shared by the brief series, e.g. ai-agent-brief")
+    seen_urls_ap.add_argument("--last", type=int, default=14,
+                              help="How many of the most recent briefs to scan (default: 14; 0 for all)")
+    seen_urls_ap.add_argument("--check", action="append", default=[], metavar="URL",
+                              help="Classify this candidate URL as seen or new. Repeatable.")
+    add_site_arg(seen_urls_ap)
+    seen_urls_ap.set_defaults(func=cmd_seen_urls)
 
     doctor_ap = sub.add_parser("doctor", help="Check the runtime can drive the harness")
     add_site_arg(doctor_ap)

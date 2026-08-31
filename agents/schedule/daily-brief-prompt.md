@@ -40,12 +40,17 @@ Before committing anything, make sure the site checkout is current:
 git -C "$DEEPSEARCH_SITE" pull --rebase
 ```
 
-Network note: this environment allows github.com and api.github.com, so the
-GitHub lane and git push work. It does NOT allow export.arxiv.org or
-api.semanticscholar.org, so `scripts/search_arxiv.py` and
-`scripts/search_semantic_scholar.py` will fail with a 403 or a connection
-error. That is expected — skip the academic lane rather than working around
-it, and do not treat it as a run failure.
+Network note: this environment's allowlist decides which lanes work.
+`github.com` and `api.github.com` are always allowed, so the GitHub lane and
+git push work. Every other host — the feed publishers, `hn.algolia.com`,
+arxiv, Semantic Scholar — works only if it was added to the environment's
+Allowed domains (see agents/schedule/README.md in the harness checkout).
+
+So: run each lane, and when a host is blocked you will see a 403 or a
+connection error. Record which lanes were unavailable in `working/gaps.md` and
+carry on with the rest. Do not try to route around a blocked host, and do not
+treat it as a run failure — a brief built from fewer lanes is still a brief,
+as long as it says so.
 
 ## Task
 
