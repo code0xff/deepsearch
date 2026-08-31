@@ -53,19 +53,33 @@ config, not from this file.
   today's directory already exists.
 - **The cloud image has no `gh`.** `doctor` reports `gh CLI: missing` there.
   `search_github.py` falls back to the REST API over plain HTTPS, so the repo
-  and issue searches still work — but unauthenticated search allows only 10
-  requests/minute, and **code search returns 401 without a token**. Add
-  `GITHUB_TOKEN` as an environment API credential to lift both.
-- **Most lanes need the network allowlist widened.** The Default environment's
-  Trusted policy allows `github.com` and `api.github.com` — enough for the
-  GitHub lane, cloning and pushing — and blocks everything else with a `403`
-  and `x-deny-reason: host_not_allowed`. That silently costs you the feeds
-  lane and the academic lane, which is most of what a daily brief runs on.
+  and issue searches still work once the network is **Full** — but
+  unauthenticated search allows only 10 requests/minute, and **code search
+  returns 401 without a token**. Add `GITHUB_TOKEN` as an environment API
+  credential to lift both.
+- **The MCP GitHub connector is scoped to the routine's own repos.**
+  `mcp__github__list_releases` on a third-party repo returns *"repository … is
+  not configured for this session"*. `search_repositories` is not scoped and
+  does work. Use `search_github.py` for third-party repo state, not the
+  connector.
+- **The environment needs `Network access: Full`.** Measured on the first
+  scheduled run, the **Trusted** policy blocks far more than its published
+  default allowlist suggests: every one of the 14 feed hosts, `hn.algolia.com`,
+  `arxiv.org`, and — despite being on the documented list — `github.com` and
+  `api.github.com` all failed with `403 Forbidden` on CONNECT. Cloning still
+  works because the runner does that outside the sandbox; the *session* cannot
+  reach those hosts.
 
-  Fix it once: edit the routine, open the environment settings, set **Network
-  access** to **Custom**, tick *Also include default list of common package
-  managers*, and paste the domains below. See
-  [Configuring the allowlist](#configuring-the-allowlist).
+  `WebSearch` is unaffected (it runs on Anthropic's infrastructure), but
+  **`WebFetch` is subject to the same allowlist** and returns
+  `{"error_type":"EGRESS_BLOCKED"}` for any host that is not on it. A research
+  agent fetches pages it could not have named in advance, so an allowlist
+  cannot be enumerated for this workload — which is why this routine runs on
+  **Full**, not Custom.
+
+  Set it under Edit routine → the environment chip → the gear icon → **Network
+  access: Full** → Save changes. It applies to new sessions, not a run already
+  in flight.
 
 ### Checking on it
 
@@ -77,11 +91,14 @@ then list runs and read the log for the run in question. A fire that was
 refused before a session existed (routine paused, environment gone, repo access
 lost) leaves no run at all — check the routine's own config in that case.
 
-## Configuring the allowlist
+## If you prefer Custom over Full
 
-The feeds and academic lanes reach hosts the Default environment blocks. Set
-the environment's **Network access** to **Custom**, keep the default list, and
-add these:
+Full is the setting this routine is built for, because WebFetch has to reach
+pages nobody listed in advance. If you would rather cap what the sandbox can
+reach and accept that the web lane can search but often not fetch, set
+**Network access** to **Custom**, tick *Also include default list of common
+package managers*, and add at least these — the feed hosts plus the aggregator
+and academic endpoints:
 
 ```
 api.semanticscholar.org
@@ -104,9 +121,9 @@ www.reddit.com
 www.theverge.com
 ```
 
-That is `config/feeds.txt` plus the aggregator and academic endpoints. Keep the
-two lists in step: **adding a feed to `config/feeds.txt` does nothing until its
-host is on this list too.** Regenerate the set with:
+Keep the two lists in step: **adding a feed to `config/feeds.txt` does nothing
+until its host is on this list too** — which is the maintenance burden Full
+avoids. Regenerate the set with:
 
 ```bash
 grep -v '^#' config/feeds.txt | grep -v '^$' | sed -E 's#https?://([^/]+).*#\1#' | sort -u
