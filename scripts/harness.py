@@ -13,6 +13,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from common import (
+    FORCE_BUILTIN,
     PLACEHOLDER_RE,
     RESERVED_SLUGS,
     SOURCE_TYPES,
@@ -643,16 +644,22 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     print(f"python: {sys.version.split()[0]} ({sys.executable})")
 
-    for module, why in (
-        ("yaml", "meta.yaml parsing falls back to a limited built-in parser"),
-        ("markdown", "drafts render with the limited built-in renderer"),
-    ):
-        try:
-            __import__(module)
-            print(f"  {module}: ok")
-        except ImportError:
-            print(f"  {module}: MISSING — {why}")
-            print(f"    install: {sys.executable} -m pip install --user {module if module != 'yaml' else 'pyyaml'}")
+    if FORCE_BUILTIN:
+        print("renderer: builtin (pinned by DEEPSEARCH_RENDERER=builtin)")
+        print("  yaml/markdown are ignored even if installed, so this run matches")
+        print("  a site seeded without them")
+    else:
+        print("renderer: auto (uses yaml/markdown when importable)")
+        for module, why in (
+            ("yaml", "meta.yaml parsing falls back to a limited built-in parser"),
+            ("markdown", "drafts render with the limited built-in renderer"),
+        ):
+            try:
+                __import__(module)
+                print(f"  {module}: ok")
+            except ImportError:
+                print(f"  {module}: MISSING — {why}")
+                print(f"    install: {sys.executable} -m pip install --user {module if module != 'yaml' else 'pyyaml'}")
 
     print(f"site: {site} {'(ok)' if site.is_dir() else '(MISSING)'}")
     if not site.is_dir():

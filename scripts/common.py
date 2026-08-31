@@ -10,15 +10,28 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import re
 from pathlib import Path
 
-try:
-    import yaml  # type: ignore
-except ImportError:
-    yaml = None
-
 from paths import harness_repo_url
+
+# A site repo's pages must all be produced by the same code path: pyyaml and
+# `markdown` render cosmetically different HTML from the built-in fallbacks, so
+# a machine that happens to have them installed would re-render the whole site
+# on its next index regeneration. Set DEEPSEARCH_RENDERER=builtin to pin the
+# fallbacks regardless of what is importable — that is how an unattended run in
+# an unknown image stays byte-compatible with the environment that seeded the
+# site. `harness.py doctor` reports which path is active.
+FORCE_BUILTIN = os.environ.get("DEEPSEARCH_RENDERER", "auto").strip().lower() == "builtin"
+
+if FORCE_BUILTIN:
+    yaml = None
+else:
+    try:
+        import yaml  # type: ignore
+    except ImportError:
+        yaml = None
 
 # Languages the harness can render. Adding a code here requires an i18n
 # strings table in both render_report.I18N and render_index.INDEX_I18N.

@@ -80,6 +80,21 @@ git push
 
 GitHub Actions in the site repo then deploys the committed static files to Pages.
 
+## Standing briefs
+
+Besides one-off deep dives, the harness supports **standing briefs** — a
+recurring, time-boxed pass over a beat the site already covers, keyed
+`<prefix>-<YYYY-MM-DD>`. A brief scouts for news *before* it scaffolds, drops
+anything already cited by the last three briefs, and exits without publishing
+on a quiet day, so the index never collects empty entries. Rules live in
+[`PROTOCOL.md`](PROTOCOL.md) §2.1; the prompts are
+`.claude/commands/research-daily.md` and
+`agents/codex/prompts/research-daily.md`.
+
+Briefs are meant to run unattended on a schedule.
+[`agents/schedule/README.md`](agents/schedule/README.md) documents the Claude
+Code cloud routine that drives one daily.
+
 ## Agent adapters
 
 - Claude Code: [`CLAUDE.md`](CLAUDE.md) and `.claude/commands/`
@@ -101,6 +116,12 @@ quotes or the `toc` extension.
 `python3 scripts/harness.py doctor` reports which path is active. The two
 paths produce cosmetically different HTML, so pick one before a site repo
 accumulates reports; switching later re-renders every page.
+
+`DEEPSEARCH_RENDERER=builtin` pins the fallbacks regardless of what is
+installed. Use it where you do not control the image — a scheduled cloud
+routine, CI — if the site was seeded without `pyyaml` and `markdown`.
+Without it, one run on a machine that happens to ship `markdown` re-renders
+the whole site on its next `render-index`.
 
 ## Dependencies
 

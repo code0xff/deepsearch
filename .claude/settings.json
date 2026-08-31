@@ -5,6 +5,8 @@
       "Bash(python3 scripts/*)",
       "Bash(python3 -c *)",
       "Bash(python3 -m *)",
+      "Bash(bash scripts/*)",
+      "Bash(date*)",
       "Bash(git -C *)",
       "Bash(git add *)",
       "Bash(git commit *)",

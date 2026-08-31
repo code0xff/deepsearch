@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 
 from common import (
+    FORCE_BUILTIN,
     NATIVE_LANG_LABEL,
     draft_path,
     load_meta,
@@ -116,6 +117,9 @@ def _markdown_converter():
     """
     if getattr(_markdown_converter, "_cached", "unset") != "unset":
         return _markdown_converter._cached  # type: ignore[attr-defined]
+    if FORCE_BUILTIN:
+        _markdown_converter._cached = None  # type: ignore[attr-defined]
+        return None
     try:
         import markdown  # type: ignore
 
