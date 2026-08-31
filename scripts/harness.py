@@ -672,6 +672,16 @@ def cmd_seen_urls(args: argparse.Namespace) -> int:
         f"scanned {len(briefs)} brief(s) matching {args.prefix!r}, {len(seen)} distinct url(s)",
         file=sys.stderr,
     )
+    if not briefs:
+        # The recency window exists to avoid repeating the previous brief. With
+        # no previous brief there is nothing to repeat, and a narrow window
+        # would make an active beat look empty. Say so rather than leaving the
+        # caller to infer it from a zero.
+        print(
+            "seed run: no prior brief in this series — use the wider seed window "
+            "(PROTOCOL.md 2.1)",
+            file=sys.stderr,
+        )
 
     if not args.check:
         for key in sorted(seen):

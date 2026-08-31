@@ -40,6 +40,14 @@ successful outcomes, not failures.
    week later is still not new. Also skim the most recent brief's `draft.md` so
    you know what was already said — a story that only advanced cosmetically
    since yesterday is not news.
+
+   **If it reports zero prior briefs, this is a seed run.** Use a **14-day**
+   window in Phase 1 instead of 72 hours, and say so in the Introduction. There
+   is no prior brief to repeat, so nothing can be duplicated; a 72-hour window
+   on the first edition just makes an active beat look dead. Every later brief
+   is back to 72 hours — this exception is decided by the brief count, never by
+   how thin the results look.
+
 6. The site also holds long-form reports on this beat. `ls "$DEEPSEARCH_SITE"`
    and note the slugs adjacent to the topic; you will cross-link them in the
    draft rather than re-explaining background from scratch.
@@ -50,8 +58,9 @@ A brief must earn its existence, so you find the news before you create the
 report directory.
 
 1. Write 4–6 search variants covering the standing topic's sub-beats. Scope
-   every variant to the window — the last **72 hours** (a 24h window drops
-   weekend and holiday news; the URL dedupe from Phase 0 removes the overlap).
+   every variant to the window — the last **72 hours**, or **14 days** on a
+   seed run (a 24h window drops weekend and holiday news; the URL dedupe from
+   Phase 0 removes the overlap).
 2. Run the lanes, in this order of yield for a daily beat:
    - `/research-feeds` — publisher RSS/Atom plus Hacker News. Fastest and most
      primary: the vendor's own announcement, hours before it is indexed

@@ -40,6 +40,14 @@ Codex equivalent of `.claude/commands/research-daily.md`.
    resurfaces a week later is still not new. Skim the latest brief's
    `draft.md` too — a story that only advanced cosmetically since
    yesterday is not news.
+
+   **If it reports zero prior briefs, this is a seed run.** Use a
+   **14-day** window in Phase 1 instead of 72 hours, and say so in the
+   Introduction. With no prior brief nothing can be duplicated, and a
+   72-hour first edition makes an active beat look dead. Every later
+   brief is back to 72 hours — the exception is decided by the brief
+   count, never by how thin the results look.
+
 6. `ls "$DEEPSEARCH_SITE"` and note the long-form reports adjacent to
    this beat. Cross-link them in the draft instead of re-explaining
    background.
@@ -50,8 +58,9 @@ A brief must earn its existence, so find the news before creating the
 report directory.
 
 1. Write 4–6 search variants across the topic's sub-beats, each scoped
-   to the last **72 hours**. A 24h window drops weekend and holiday
-   news; the URL dedupe from Phase 0 removes the overlap.
+   to the last **72 hours** — or **14 days** on a seed run. A 24h window
+   drops weekend and holiday news; the URL dedupe from Phase 0 removes
+   the overlap.
 2. Run the lanes in order of yield for a daily beat:
    - Feeds lane — see `prompts/research-feeds.md` (publisher RSS/Atom
      plus Hacker News). Fastest and most primary: the vendor's own

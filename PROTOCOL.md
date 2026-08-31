@@ -114,6 +114,14 @@ runs the same seven phases and every invariant in §3, with four changes:
 The window is the last **72 hours** by default. A 24-hour window drops weekend
 and holiday news, and the URL dedupe already removes the overlap.
 
+**The first brief in a series is the exception.** The window exists to avoid
+repeating what the previous brief covered; with no previous brief there is
+nothing to repeat, and 72 hours on day one makes an active beat look dead. When
+`seen-urls <prefix>` reports zero prior briefs, that run is a **seed run** and
+takes a **14-day** window instead. Every later brief is back to 72 hours. This
+is not a licence to widen the window on a slow day — the seed window applies
+once per series, decided by the brief count, never by how the results look.
+
 Briefs cross-link the site's long-form reports for background instead of
 re-deriving it, which is what keeps them short.
 

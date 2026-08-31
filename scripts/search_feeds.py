@@ -14,6 +14,10 @@ Usage:
     python3 scripts/search_feeds.py [--since-hours 72] [--limit-per-feed 10]
     python3 scripts/search_feeds.py --feeds path/to/feeds.txt --match agent --match payment
 
+Items whose feed omits a date are dated from the article page before the
+window is applied (--resolve-dates), because otherwise a publisher that ships
+no `pubDate` silently bypasses the recency filter entirely.
+
 Outputs JSON lines to stdout, newest first. Feeds that fail are reported on
 stderr and skipped: one dead feed must not sink a scheduled run.
 """
@@ -37,6 +41,17 @@ USER_AGENT = "deepsearch-harness/0.1 (+https://github.com/code0xff/deepsearch)"
 ATOM = "{http://www.w3.org/2005/Atom}"
 TAG_RE = re.compile(r"<[^>]+>")
 WS_RE = re.compile(r"\s+")
+
+# Some publishers ship a feed with no per-item date (the Google Developers
+# Blog is one), which would let stale posts slip past the recency window.
+# The article page almost always carries the date in standard metadata, in
+# rough order of reliability:
+PAGE_DATE_RES = (
+    re.compile(r'property=["\']article:published_time["\']\s+content=["\']([^"\']+)', re.I),
+    re.compile(r'content=["\']([^"\']+)["\']\s+property=["\']article:published_time', re.I),
+    re.compile(r'"datePublished"\s*:\s*"([^"]+)"', re.I),
+    re.compile(r'<time[^>]+datetime=["\']([^"\']+)', re.I),
+)
 
 
 def load_feed_list(path: Path) -> list[str]:
@@ -131,12 +146,28 @@ def parse_feed(body: bytes) -> tuple[str, list[dict]]:
     raise ValueError(f"unrecognised feed root element {root.tag!r}")
 
 
+def resolve_page_date(url: str) -> datetime | None:
+    """Read a publication date out of an article page's metadata."""
+    try:
+        body = fetch(url, timeout=15).decode("utf-8", "ignore")
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError):
+        return None
+    for pattern in PAGE_DATE_RES:
+        m = pattern.search(body)
+        if m:
+            when = parse_date(m.group(1))
+            if when is not None:
+                return when
+    return None
+
+
 def collect(feeds: list[str], since_hours: int, limit_per_feed: int,
-            match: list[str]) -> tuple[list[dict], list[str]]:
+            match: list[str], resolve_dates: int = 0) -> tuple[list[dict], list[str]]:
     cutoff = datetime.now(timezone.utc) - timedelta(hours=since_hours)
     needles = [m.lower() for m in match]
     results: list[dict] = []
     problems: list[str] = []
+    resolved = 0
 
     for feed_url in feeds:
         try:
@@ -153,13 +184,18 @@ def collect(feeds: list[str], since_hours: int, limit_per_feed: int,
             if not item["url"]:
                 continue
             when = parse_date(item["published"])
-            # A feed with no usable date is kept rather than silently dropped;
-            # the caller can still date it from the page itself.
             if when is not None and when < cutoff:
                 continue
             if needles:
                 haystack = f"{item['title']} {item['summary']}".lower()
                 if not any(n in haystack for n in needles):
+                    continue
+            # Date a dateless item from its own page, after the cheap filters
+            # so the budget is spent only on items that are otherwise keepers.
+            if when is None and resolved < resolve_dates:
+                resolved += 1
+                when = resolve_page_date(item["url"])
+                if when is not None and when < cutoff:
                     continue
             results.append({
                 "url": item["url"],
@@ -184,6 +220,10 @@ def main() -> int:
     ap.add_argument("--limit-per-feed", type=int, default=10)
     ap.add_argument("--match", action="append", default=[], metavar="TERM",
                     help="Keep only items whose title or summary contains TERM. Repeatable (OR).")
+    ap.add_argument("--resolve-dates", type=int, default=15, metavar="N",
+                    help="For up to N items whose feed carries no date, fetch the page and "
+                         "read it from the metadata, then apply the window (default: 15; "
+                         "0 to disable and let dateless items through undated)")
     args = ap.parse_args()
 
     try:
@@ -195,7 +235,8 @@ def main() -> int:
         print(f"error: no feeds listed in {args.feeds}", file=sys.stderr)
         return 1
 
-    results, problems = collect(feeds, args.since_hours, args.limit_per_feed, args.match)
+    results, problems = collect(feeds, args.since_hours, args.limit_per_feed,
+                                args.match, args.resolve_dates)
 
     for problem in problems:
         print(f"! {problem}", file=sys.stderr)
