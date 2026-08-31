@@ -91,7 +91,7 @@ GitHub Actions in the site repo then deploys the committed static files to Pages
 | feeds | `search_feeds.py` (`config/feeds.txt`), `search_social.py` | Publisher newsrooms and developer blogs, repo release/commit feeds, Hacker News; Bluesky and Reddit with free credentials |
 | web | The agent's web search and fetch | Anything a search engine has indexed |
 | papers | `search_arxiv.py`, `search_semantic_scholar.py` | arXiv, Semantic Scholar |
-| github | `search_github.py` (`gh` CLI) | Repositories, code, issues |
+| github | `search_github.py` (`gh` CLI, else the REST API) | Repositories, code, issues |
 
 X/Twitter and LinkedIn are **not** read directly: X has had no free read tier
 since February 2026, and LinkedIn has no third-party API for public post
@@ -152,7 +152,10 @@ the whole site on its next `render-index`.
 
 - Python 3.10+
 - `pyyaml`, `markdown`
-- `gh` CLI (optional, only for GitHub search helpers)
+- `gh` CLI (optional). `search_github.py` prefers it, and falls back to the
+  GitHub REST API when it is absent — which is what happens in the scheduled
+  cloud image. On the fallback path, set `GITHUB_TOKEN` to lift the
+  10-requests/minute unauthenticated limit; code search requires it outright.
 
 Optional Semantic Scholar API key for heavy paper queries:
 

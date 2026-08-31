@@ -221,7 +221,7 @@ If the source is access-limited, set `"access_limited": true` and `quote` may be
 | feeds | `search_feeds.py` (RSS/Atom in `config/feeds.txt`), `search_social.py` | Publisher newsrooms and developer blogs, repo release/commit feeds, Hacker News; Bluesky and Reddit with credentials |
 | web | The runtime's web search and fetch | Anything a search engine has indexed |
 | papers | `search_arxiv.py`, `search_semantic_scholar.py` | arXiv, Semantic Scholar |
-| github | `search_github.py` (`gh` CLI) | Repositories, code, issues |
+| github | `search_github.py` (`gh` CLI, else the REST API) | Repositories, code, issues |
 
 The feeds lane exists because search has a latency floor: it returns only what
 has already been indexed, which lags a publisher by hours to days. A feed

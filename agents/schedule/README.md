@@ -51,6 +51,11 @@ config, not from this file.
   not the routine failing — check the run log before assuming otherwise.
 - **A double fire is a no-op.** The brief is keyed by date and exits early if
   today's directory already exists.
+- **The cloud image has no `gh`.** `doctor` reports `gh CLI: missing` there.
+  `search_github.py` falls back to the REST API over plain HTTPS, so the repo
+  and issue searches still work — but unauthenticated search allows only 10
+  requests/minute, and **code search returns 401 without a token**. Add
+  `GITHUB_TOKEN` as an environment API credential to lift both.
 - **Most lanes need the network allowlist widened.** The Default environment's
   Trusted policy allows `github.com` and `api.github.com` — enough for the
   GitHub lane, cloning and pushing — and blocks everything else with a `403`
