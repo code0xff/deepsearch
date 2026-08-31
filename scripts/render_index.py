@@ -15,26 +15,25 @@ from __future__ import annotations
 
 import argparse
 import html
-import re
 import sys
 from pathlib import Path
 
-try:
-    import yaml  # type: ignore
-except ImportError:
-    yaml = None
-
+from common import (
+    SUPPORTED_LANGS,
+    iter_report_dirs,
+    load_meta,
+    meta_tags,
+    resolve_field,
+    resolve_lang_list,
+    site_header_html,
+)
 from paths import (
     add_site_arg,
     harness_repo_url,
-    parse_meta_fallback,
     resolve_site,
     site_base_url,
     site_reports,
 )
-
-
-SUPPORTED_LANGS = ("en", "ko")
 
 
 INDEX_I18N: dict[str, dict[str, str]] = {
@@ -89,46 +88,12 @@ INDEX_I18N: dict[str, dict[str, str]] = {
 }
 
 
-def parse_meta(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8")
-    if yaml is not None:
-        try:
-            return yaml.safe_load(text) or {}
-        except Exception:
-            return {}
-    return parse_meta_fallback(text)
-
-
-def resolve_lang_list(meta: dict) -> tuple[str, list[str]]:
-    primary = str(meta.get("lang") or "en")
-    declared = meta.get("langs")
-    if isinstance(declared, list) and declared:
-        langs = [str(l) for l in declared]
-    elif isinstance(declared, str) and declared.strip():
-        langs = [s.strip() for s in declared.strip("[]").split(",") if s.strip()]
-    else:
-        langs = [primary]
-    if primary not in langs:
-        langs = [primary] + langs
-    return primary, langs
-
-
-def resolve_field(meta: dict, key: str, lang: str, primary_lang: str) -> str:
-    if lang == primary_lang:
-        return str(meta.get(key) or "")
-    return str(meta.get(f"{key}_{lang}") or meta.get(key) or "")
-
-
 def collect(reports_dir: Path) -> list[dict]:
     entries: list[dict] = []
-    if not reports_dir.is_dir():
-        return entries
-    for child in reports_dir.iterdir():
-        meta_path = child / "meta.yaml"
-        index_path = child / "index.html"
-        if not (child.is_dir() and meta_path.exists() and index_path.exists()):
+    for child in iter_report_dirs(reports_dir):
+        if not (child / "index.html").exists():
             continue
-        meta = parse_meta(meta_path)
+        meta = load_meta(child / "meta.yaml", quiet=True)
         status = str(meta.get("status") or "").lower()
         if status not in ("ready", "published"):
             continue
@@ -188,9 +153,7 @@ def render_item(m: dict, display_lang: str) -> str:
     title = resolve_field(m, "title", display_lang, primary_lang) or m["slug"]
     subtitle = resolve_field(m, "subtitle", display_lang, primary_lang)
     date = str(m.get("date") or "")
-    tags = m.get("tags") or []
-    if isinstance(tags, str):
-        tags = [t.strip() for t in re.split(r"[,\s]+", tags) if t.strip()]
+    tags = meta_tags(m)
     tag_txt = " · ".join(html.escape(t) for t in tags) if tags else ""
     href = href_for_report(m, display_lang)
     # Lowercased haystack for the client-side filter (title + subtitle + tags).
@@ -262,30 +225,14 @@ def build_hreflang(current: str) -> str:
 def build_site_header(lang: str) -> str:
     strings = INDEX_I18N[lang]
     alt_lang = strings["lang_other_code"]
-    alt_label = strings["lang_other_label"]
-    alt_href = sibling_href_for_index(lang, alt_lang)
-    lang_toggle = (
-        f'    <a class="site-header__lang" href="{html.escape(alt_href)}" '
-        f'hreflang="{html.escape(alt_lang)}">{html.escape(alt_label)}</a>\n'
-    )
-    gh_link = (
-        f'    <a class="site-header__gh" href="{html.escape(harness_repo_url())}" '
-        f'target="_blank" rel="noopener" aria-label="{html.escape(strings["github_label"])}" '
-        f'title="{html.escape(strings["github_label"])}">\n'
-        '      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.575.106.785-.25.785-.556 0-.274-.01-1.001-.015-1.965-3.196.695-3.87-1.54-3.87-1.54-.523-1.33-1.277-1.684-1.277-1.684-1.044-.713.08-.699.08-.699 1.155.082 1.763 1.186 1.763 1.186 1.026 1.758 2.693 1.25 3.35.956.103-.743.401-1.25.73-1.538-2.553-.29-5.236-1.276-5.236-5.68 0-1.255.448-2.281 1.184-3.085-.119-.29-.513-1.46.112-3.044 0 0 .966-.31 3.165 1.178a11.02 11.02 0 0 1 5.762 0c2.198-1.489 3.163-1.178 3.163-1.178.626 1.584.232 2.754.114 3.044.737.804 1.183 1.83 1.183 3.085 0 4.415-2.687 5.387-5.247 5.671.412.355.78 1.056.78 2.128 0 1.537-.014 2.776-.014 3.154 0 .309.207.668.79.555A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"/></svg>\n'
-        '    </a>\n'
-    )
-    return (
-        '<header class="site-header">\n'
-        f'  <a class="site-header__brand" href="{html.escape(brand_href_for_index(lang))}">{html.escape(strings["brand"])}</a>\n'
-        '  <div class="site-header__controls">\n'
-        f'{lang_toggle}'
-        f'{gh_link}'
-        f'    <button class="site-header__theme" type="button" aria-label="{html.escape(strings["theme_label"])}" data-theme-toggle>\n'
-        '      <svg class="site-header__theme-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>\n'
-        '    </button>\n'
-        '  </div>\n'
-        '</header>'
+    return site_header_html(
+        brand=strings["brand"],
+        brand_href=brand_href_for_index(lang),
+        alt_lang=alt_lang,
+        alt_label=strings["lang_other_label"],
+        alt_href=sibling_href_for_index(lang, alt_lang),
+        github_label=strings["github_label"],
+        theme_label=strings["theme_label"],
     )
 
 
@@ -523,7 +470,8 @@ def write_sitemap(entries: list[dict], site: Path) -> Path:
         '<?xml version="1.0" encoding="UTF-8"?>',
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
     ]
-    for loc, lastmod in report_urls(entries):
+    urls = report_urls(entries)
+    for loc, lastmod in urls:
         lines.append("  <url>")
         lines.append(f"    <loc>{html.escape(loc)}</loc>")
         if lastmod:
@@ -532,7 +480,7 @@ def write_sitemap(entries: list[dict], site: Path) -> Path:
     lines.append("</urlset>")
     out_path = site / "sitemap.xml"
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(f"wrote {out_path} ({len(report_urls(entries))} urls)")
+    print(f"wrote {out_path} ({len(urls)} urls)")
     return out_path
 
 

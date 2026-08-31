@@ -18,21 +18,24 @@ from __future__ import annotations
 
 import argparse
 import html
-import json
 import re
 import sys
 from pathlib import Path
 
-try:
-    import yaml  # type: ignore
-except ImportError:
-    yaml = None  # Fallback parser below.
-
+from common import (
+    NATIVE_LANG_LABEL,
+    draft_path,
+    load_meta,
+    load_sources,
+    meta_tags,
+    output_path,
+    resolve_field,
+    resolve_lang_list,
+    site_header_html,
+)
 from paths import (
     REPO,
     add_site_arg,
-    harness_repo_url,
-    parse_meta_fallback,
     resolve_site,
     site_base_url,
     site_reports,
@@ -102,85 +105,45 @@ def chrome(lang: str) -> dict[str, str]:
     return I18N.get(lang) or I18N["en"]
 
 
-# ---------- meta helpers ----------
-
-def load_meta(path: Path) -> dict:
-    text = path.read_text(encoding="utf-8")
-    if yaml is not None:
-        return yaml.safe_load(text) or {}
-    return parse_meta_fallback(text)
-
-
-def resolve_lang_list(meta: dict) -> tuple[str, list[str]]:
-    """Return (primary_lang, langs). Backward-compatible with single-lang meta."""
-    primary = str(meta.get("lang") or "en")
-    declared = meta.get("langs")
-    if isinstance(declared, list) and declared:
-        langs = [str(l) for l in declared]
-    elif isinstance(declared, str) and declared.strip():
-        langs = [s.strip() for s in declared.strip("[]").split(",") if s.strip()]
-    else:
-        langs = [primary]
-    if primary not in langs:
-        langs = [primary] + langs
-    return primary, langs
-
-
-def resolve_field(meta: dict, key: str, lang: str, primary_lang: str) -> str:
-    """Fetch `key` for the requested language.
-
-    Primary language uses the bare key (e.g. `title`). Alternates use the
-    suffixed variant (e.g. `title_ko`), falling back to the bare key if the
-    translation is missing.
-    """
-    if lang == primary_lang:
-        return str(meta.get(key) or "")
-    return str(meta.get(f"{key}_{lang}") or meta.get(key) or "")
-
-
-# ---------- source handling ----------
-
-def load_sources(path: Path) -> dict[str, dict]:
-    if not path.exists():
-        return {}
-    sources: dict[str, dict] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            obj = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        sid = obj.get("id")
-        if sid:
-            sources[sid] = obj
-    return sources
-
-
 # ---------- markdown ----------
 
-def try_markdown(text: str) -> str:
-    """Try to use the `markdown` package; fall back to a minimal renderer."""
+def _markdown_converter():
+    """Build the `markdown` converter once, or return None if unavailable.
+
+    Constructing a ``markdown.Markdown`` costs more than converting a typical
+    draft, and render-report converts twice per language (abstract + body), so
+    the instance is cached and ``reset()`` between documents.
+    """
+    if getattr(_markdown_converter, "_cached", "unset") != "unset":
+        return _markdown_converter._cached  # type: ignore[attr-defined]
     try:
         import markdown  # type: ignore
 
-        md = markdown.Markdown(
+        converter = markdown.Markdown(
             extensions=["extra", "sane_lists", "smarty", "tables", "fenced_code", "toc"],
             output_format="html5",
         )
-        return md.convert(text)
     except ImportError:
-        if not getattr(try_markdown, "_warned", False):
-            print(
-                "warning: Python 'markdown' package not installed; using minimal "
-                "renderer. GFM-style tables are supported, but smarty / footnote "
-                "/ toc extensions are not. Install with `pipx install markdown` "
-                "or `apt install python3-markdown` for full fidelity.",
-                file=sys.stderr,
-            )
-            try_markdown._warned = True  # type: ignore[attr-defined]
+        converter = None
+        print(
+            "warning: Python 'markdown' package not installed; using the built-in "
+            "renderer. Tables, ordered/unordered lists, blockquotes and code "
+            "fences are supported, but smarty / toc extensions are not. Install "
+            "with `pipx install markdown` or `pip install --user markdown` for "
+            "full fidelity.",
+            file=sys.stderr,
+        )
+    _markdown_converter._cached = converter  # type: ignore[attr-defined]
+    return converter
+
+
+def try_markdown(text: str) -> str:
+    """Convert markdown via the `markdown` package, else the built-in renderer."""
+    converter = _markdown_converter()
+    if converter is None:
         return minimal_markdown(text)
+    converter.reset()
+    return converter.convert(text)
 
 
 INLINE_CODE = re.compile(r"`([^`]+)`")
@@ -202,6 +165,13 @@ TABLE_ROW_RE = re.compile(r"^\s*\|(.+)\|\s*$")
 TABLE_SEP_RE = re.compile(
     r"^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?\s*$"
 )
+HEADING_RE = re.compile(r"^(#{1,6})\s+(.*)$")
+# Both keep the item text in group 3 so callers do not branch on which matched.
+BULLET_RE = re.compile(r"^(\s*)([-*+])\s+(.*)$")
+ORDERED_RE = re.compile(r"^(\s*)(\d+[.)])\s+(.*)$")
+QUOTE_RE = re.compile(r"^\s*>\s?(.*)$")
+HR_RE = re.compile(r"^\s*(?:-{3,}|\*{3,}|_{3,})\s*$")
+SETEXT_H2_RE = re.compile(r"^\s*-{3,}\s*$")
 
 
 def _split_table_row(line: str) -> list[str]:
@@ -210,25 +180,76 @@ def _split_table_row(line: str) -> list[str]:
     return [c.strip() for c in inner.split("|")]
 
 
+def _list_match(line: str) -> re.Match[str] | None:
+    return BULLET_RE.match(line) or ORDERED_RE.match(line)
+
+
+def _indent_of(line: str) -> int:
+    return len(line) - len(line.lstrip())
+
+
+def _is_lazy_continuation(line: str) -> bool:
+    """True for a plain prose line — one that does not open a new block."""
+    return bool(line.strip()) and not (
+        HEADING_RE.match(line)
+        or HR_RE.match(line)
+        or _list_match(line)
+        or TABLE_ROW_RE.match(line)
+        or line.startswith("```")
+    )
+
+
+def render_list_block(block: list[str]) -> str:
+    """Render one list block, recursing for nested lists and item bodies.
+
+    `block` is every line belonging to the list, including indented children
+    and continuation lines. Items are split at the shallowest indent seen on
+    the first line; deeper lines are dedented and handed back to
+    ``minimal_markdown``, which turns them into the nested `<ul>`/`<ol>`.
+    """
+    base_indent = _indent_of(block[0])
+    ordered = ORDERED_RE.match(block[0]) is not None
+    items: list[list[str]] = []
+    for line in block:
+        m = _list_match(line)
+        if m and _indent_of(line) <= base_indent:
+            items.append([m.group(3)])
+        elif items:
+            # Child list or continuation text: strip one level of indent so the
+            # recursive pass sees it as a block in its own right.
+            items[-1].append(line[min(_indent_of(line), base_indent + 2):])
+    tag = "ol" if ordered else "ul"
+    parts = [f"<{tag}>"]
+    for item in items:
+        head = inline(item[0])
+        body = "\n".join(item[1:])
+        if body.strip():
+            parts.append(f"<li>{head}\n{minimal_markdown(body)}</li>")
+        else:
+            parts.append(f"<li>{head}</li>")
+    parts.append(f"</{tag}>")
+    return "\n".join(parts)
+
+
 def minimal_markdown(text: str) -> str:
+    """Built-in block renderer used when the `markdown` package is absent.
+
+    Covers what research drafts actually use: headings, paragraphs, fenced
+    code, GFM tables, ordered and unordered lists (including nesting),
+    blockquotes, and horizontal rules. Inline formatting is handled by
+    ``inline()``.
+    """
     lines = text.splitlines()
     out: list[str] = []
     buf: list[str] = []
-    in_code = False
     code_buf: list[str] = []
-    in_list = False
+    in_code = False
 
     def flush_para():
         nonlocal buf
         if buf:
             out.append("<p>" + inline(" ".join(buf)) + "</p>")
             buf = []
-
-    def flush_list():
-        nonlocal in_list
-        if in_list:
-            out.append("</ul>")
-            in_list = False
 
     i = 0
     n = len(lines)
@@ -241,7 +262,6 @@ def minimal_markdown(text: str) -> str:
                 in_code = False
             else:
                 flush_para()
-                flush_list()
                 in_code = True
             i += 1
             continue
@@ -251,7 +271,6 @@ def minimal_markdown(text: str) -> str:
             continue
         if not line.strip():
             flush_para()
-            flush_list()
             i += 1
             continue
         # GFM-style table: header row + separator + 0+ body rows.
@@ -261,7 +280,6 @@ def minimal_markdown(text: str) -> str:
             and TABLE_SEP_RE.match(lines[i + 1])
         ):
             flush_para()
-            flush_list()
             header_cells = _split_table_row(line)
             i += 2  # consume header and separator
             body_rows: list[list[str]] = []
@@ -283,27 +301,70 @@ def minimal_markdown(text: str) -> str:
             parts.append("</table>")
             out.append("".join(parts))
             continue
-        m = re.match(r"^(#{1,6})\s+(.*)$", line)
+        m = HEADING_RE.match(line)
         if m:
             flush_para()
-            flush_list()
             level = len(m.group(1))
             out.append(f"<h{level}>{inline(m.group(2).strip())}</h{level}>")
             i += 1
             continue
-        if line.lstrip().startswith(("- ", "* ")):
-            flush_para()
-            if not in_list:
-                out.append("<ul>")
-                in_list = True
-            item = line.lstrip()[2:]
-            out.append(f"<li>{inline(item)}</li>")
+        if HR_RE.match(line):
+            # `text` followed directly by `---` is a setext H2 in every
+            # markdown dialect; only a standalone rule becomes an <hr>.
+            if buf and SETEXT_H2_RE.match(line):
+                out.append(f"<h2>{inline(' '.join(buf))}</h2>")
+                buf = []
+            else:
+                flush_para()
+                out.append("<hr>")
             i += 1
+            continue
+        if QUOTE_RE.match(line):
+            flush_para()
+            quoted: list[str] = []
+            while i < n:
+                qm = QUOTE_RE.match(lines[i])
+                if qm:
+                    quoted.append(qm.group(1))
+                elif quoted and _is_lazy_continuation(lines[i]):
+                    # Markdown lets a quoted paragraph run on without the `>`.
+                    quoted.append(lines[i])
+                else:
+                    break
+                i += 1
+            inner = minimal_markdown("\n".join(quoted))
+            out.append(f"<blockquote>\n{inner}\n</blockquote>")
+            continue
+        if _list_match(line):
+            flush_para()
+            base_indent = _indent_of(line)
+            block = [line]
+            i += 1
+            while i < n:
+                nxt = lines[i]
+                if not nxt.strip():
+                    # A blank line ends the list unless an indented item follows.
+                    j = i + 1
+                    while j < n and not lines[j].strip():
+                        j += 1
+                    if j < n and _indent_of(lines[j]) > base_indent and _list_match(lines[j]):
+                        block.append("")
+                        i += 1
+                        continue
+                    break
+                if _list_match(nxt) or _indent_of(nxt) > base_indent:
+                    block.append(nxt)
+                    i += 1
+                    continue
+                break
+            out.append(render_list_block(block))
             continue
         buf.append(line.strip())
         i += 1
+    if in_code and code_buf:
+        # Unterminated fence: emit what we have instead of dropping it.
+        out.append("<pre><code>" + html.escape("\n".join(code_buf)) + "</code></pre>")
     flush_para()
-    flush_list()
     return "\n".join(out)
 
 
@@ -395,7 +456,7 @@ def strip_manual_footnote_defs(md_body: str) -> str:
 
 def render_references(order: list[str], sources: dict[str, dict], strings: dict[str, str]) -> str:
     out = []
-    for sid in order:
+    for position, sid in enumerate(order, start=1):
         s = sources[sid]
         authors = ", ".join(s.get("authors") or []) or "—"
         title = html.escape(s.get("title") or "(untitled)")
@@ -413,25 +474,11 @@ def render_references(order: list[str], sources: dict[str, dict], strings: dict[
             parts.append(f' <span class="accessed">{strings["accessed"]} {html.escape(accessed)}.</span>')
         if s.get("access_limited"):
             parts.append(f' <span class="unverified">{strings["access_limited"]}</span>')
-        out.append(f'      <li id="ref-{order.index(sid) + 1}">{"".join(parts)}</li>')
+        out.append(f'      <li id="ref-{position}">{"".join(parts)}</li>')
     return "\n".join(out)
 
 
 # ---------- path & header helpers ----------
-
-def draft_path(report_dir: Path, lang: str, primary_lang: str) -> Path:
-    """Filename convention: draft.md for primary, draft.<code>.md for others."""
-    if lang == primary_lang:
-        return report_dir / "draft.md"
-    return report_dir / f"draft.{lang}.md"
-
-
-def output_path(report_dir: Path, lang: str, primary_lang: str) -> Path:
-    """<slug>/index.html for primary, <slug>/<code>/index.html for others."""
-    if lang == primary_lang:
-        return report_dir / "index.html"
-    return report_dir / lang / "index.html"
-
 
 def asset_root_for(lang: str, primary_lang: str) -> str:
     """Relative path from the report's index.html up to the site repo root."""
@@ -476,9 +523,6 @@ def build_hreflang(page_lang: str, primary_lang: str, langs: list[str]) -> str:
     return "\n".join(lines)
 
 
-NATIVE_LANG_LABEL = {"en": "English", "ko": "한국어"}
-
-
 def build_site_header(page_lang: str, primary_lang: str, langs: list[str], brand_href: str, report_is_alt: bool) -> str:
     strings = chrome(page_lang)
     # Always offer a language toggle. If the current report has a translation
@@ -487,38 +531,20 @@ def build_site_header(page_lang: str, primary_lang: str, langs: list[str], brand
     alt_lang = "ko" if page_lang == "en" else "en"
     if alt_lang in langs:
         alt_href = sibling_href_for(page_lang, alt_lang, primary_lang)
+    elif report_is_alt:
+        # We're at <slug>/<page_lang>/index.html → ../../ is the site root.
+        alt_href = "../../index.html" if alt_lang == "en" else f"../../{alt_lang}/index.html"
     else:
-        # No translation of this report; jump to the alt-language root index.
-        if report_is_alt:
-            # We're at <slug>/<page_lang>/index.html → three levels up? No, two.
-            # <slug>/<page_lang>/index.html → site root is ../../ → then lang subdir.
-            alt_href = "../../index.html" if alt_lang == "en" else f"../../{alt_lang}/index.html"
-        else:
-            # We're at <slug>/index.html → ../ is site root.
-            alt_href = "../index.html" if alt_lang == "en" else f"../{alt_lang}/index.html"
-    alt_label = NATIVE_LANG_LABEL.get(alt_lang, alt_lang)
-    lang_toggle = (
-        f'    <a class="site-header__lang" href="{html.escape(alt_href)}" '
-        f'hreflang="{html.escape(alt_lang)}">{html.escape(alt_label)}</a>\n'
-    )
-    gh_link = (
-        f'    <a class="site-header__gh" href="{html.escape(harness_repo_url())}" '
-        f'target="_blank" rel="noopener" aria-label="{html.escape(strings["github_label"])}" '
-        f'title="{html.escape(strings["github_label"])}">\n'
-        '      <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.5 5.73.5 12a11.5 11.5 0 0 0 7.86 10.92c.575.106.785-.25.785-.556 0-.274-.01-1.001-.015-1.965-3.196.695-3.87-1.54-3.87-1.54-.523-1.33-1.277-1.684-1.277-1.684-1.044-.713.08-.699.08-.699 1.155.082 1.763 1.186 1.763 1.186 1.026 1.758 2.693 1.25 3.35.956.103-.743.401-1.25.73-1.538-2.553-.29-5.236-1.276-5.236-5.68 0-1.255.448-2.281 1.184-3.085-.119-.29-.513-1.46.112-3.044 0 0 .966-.31 3.165 1.178a11.02 11.02 0 0 1 5.762 0c2.198-1.489 3.163-1.178 3.163-1.178.626 1.584.232 2.754.114 3.044.737.804 1.183 1.83 1.183 3.085 0 4.415-2.687 5.387-5.247 5.671.412.355.78 1.056.78 2.128 0 1.537-.014 2.776-.014 3.154 0 .309.207.668.79.555A11.5 11.5 0 0 0 23.5 12C23.5 5.73 18.27.5 12 .5z"/></svg>\n'
-        '    </a>\n'
-    )
-    return (
-        '<header class="site-header">\n'
-        f'  <a class="site-header__brand" href="{html.escape(brand_href)}">{html.escape(strings["brand"])}</a>\n'
-        '  <div class="site-header__controls">\n'
-        f'{lang_toggle}'
-        f'{gh_link}'
-        f'    <button class="site-header__theme" type="button" aria-label="{html.escape(strings["theme_label"])}" data-theme-toggle>\n'
-        '      <svg class="site-header__theme-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>\n'
-        '    </button>\n'
-        '  </div>\n'
-        '</header>'
+        # We're at <slug>/index.html → ../ is the site root.
+        alt_href = "../index.html" if alt_lang == "en" else f"../{alt_lang}/index.html"
+    return site_header_html(
+        brand=strings["brand"],
+        brand_href=brand_href,
+        alt_lang=alt_lang,
+        alt_label=NATIVE_LANG_LABEL.get(alt_lang, alt_lang),
+        alt_href=alt_href,
+        github_label=strings["github_label"],
+        theme_label=strings["theme_label"],
     )
 
 
@@ -558,10 +584,8 @@ def render_one(
 
     references_html = render_references(order, sources, strings) if order else strings["no_sources"]
 
-    tags_raw = meta.get("tags") or []
-    if isinstance(tags_raw, str):
-        tags_raw = [t.strip() for t in tags_raw.strip("[]").split(",") if t.strip()]
-    tags_text = ", ".join(tags_raw) if tags_raw else "—"
+    tags = meta_tags(meta)
+    tags_text = ", ".join(tags) if tags else "—"
 
     title = resolve_field(meta, "title", lang, primary_lang) or slug
     subtitle = resolve_field(meta, "subtitle", lang, primary_lang)
@@ -626,7 +650,8 @@ def render_report(site: Path, slug: str) -> list[Path]:
     meta = load_meta(report_dir / "meta.yaml")
     slug = str(meta.get("slug") or slug)
     primary_lang, langs = resolve_lang_list(meta)
-    sources = load_sources(report_dir / "working" / "sources.jsonl")
+    # Parse errors are the validator's business; the renderer skips bad lines.
+    sources, _ = load_sources(report_dir / "working" / "sources.jsonl")
     template = TEMPLATE.read_text(encoding="utf-8")
 
     outputs: list[Path] = []
