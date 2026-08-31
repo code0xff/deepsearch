@@ -51,6 +51,9 @@ config, not from this file.
   not the routine failing — check the run log before assuming otherwise.
 - **A double fire is a no-op.** The brief is keyed by date and exits early if
   today's directory already exists.
+- **Set `GITHUB_TOKEN`.** Without it the GitHub lane's REST fallback gets 429
+  after 10 search requests a minute, which is what the second scheduled run
+  hit. Add it as an environment API credential.
 - **The cloud image has no `gh`.** `doctor` reports `gh CLI: missing` there.
   `search_github.py` falls back to the REST API over plain HTTPS, so the repo
   and issue searches still work once the network is **Full** — but
@@ -101,6 +104,7 @@ package managers*, and add at least these — the feed hosts plus the aggregator
 and academic endpoints:
 
 ```
+api.github.com
 api.semanticscholar.org
 arstechnica.com
 arxiv.org

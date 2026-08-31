@@ -17,8 +17,11 @@ Steps:
    python3 scripts/search_github.py --kind repo  "<query>"  --limit 20
    python3 scripts/search_github.py --kind code  "<query>"  --limit 20
    python3 scripts/search_github.py --kind issue "<query>"  --limit 20
-   ```
-   Output is JSON lines.
+      python3 scripts/search_github.py <owner>/<repo> --kind release --limit 5
+```
+   Output is JSON lines. `--kind release` takes `owner/repo` instead of a
+   query and lists recent releases — use it to watch a spec repo, since
+   GitHub 403s `releases.atom` for unauthenticated datacenter requests.
 
 3. **Triage.** For repos, prioritise active projects (recent pushes, non-trivial star count, real README) and official / canonical implementations over personal forks. For code, prioritise files in well-known repositories. For issues, prioritise ones that describe real constraints or design tensions, not generic support questions.
 

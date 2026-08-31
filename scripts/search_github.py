@@ -48,6 +48,17 @@ def run_gh(args: list[str]) -> list[dict]:
 
 def rest(path: str, params: dict) -> list[dict]:
     """Call a /search endpoint and return its `items`."""
+    payload = _rest(path, params)
+    return payload.get("items", []) if isinstance(payload, dict) else []
+
+
+def rest_raw(path: str, params: dict) -> list[dict]:
+    """Call an endpoint that returns a bare JSON array."""
+    payload = _rest(path, params)
+    return payload if isinstance(payload, list) else []
+
+
+def _rest(path: str, params: dict):
     headers = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
@@ -60,12 +71,13 @@ def rest(path: str, params: dict) -> list[dict]:
     try:
         req = urllib.request.Request(url, headers=headers)
         with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read().decode("utf-8")).get("items", [])
+            return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         detail = ""
-        if e.code in (401, 403, 422):
-            detail = " — set GITHUB_TOKEN; code search always requires auth and the " \
-                     "unauthenticated search limit is 10 requests/minute"
+        if e.code in (401, 403, 422, 429) and not token:
+            detail = (" — set GITHUB_TOKEN. Unauthenticated search allows only 10 "
+                      "requests/minute (429 past that) and code search is rejected "
+                      "outright")
         raise RuntimeError(f"GitHub REST {path} returned {e.code}{detail}") from e
 
 
@@ -185,10 +197,54 @@ def search_issue(q: str, limit: int) -> list[dict]:
     return out
 
 
+def list_releases(repo: str, limit: int) -> list[dict]:
+    """Recent releases of one `owner/name` repo.
+
+    Watching a repo's releases via its `releases.atom` feed does not survive a
+    datacenter address: GitHub answers those 403 unauthenticated. The REST
+    endpoint takes a token and does, which is why release watching lives in
+    this lane rather than in `config/feeds.txt`.
+    """
+    if have_gh():
+        # `gh release list --json` exposes no url field, so build the
+        # permalink from the tag the way GitHub does.
+        data = run_gh([
+            "release", "list", "--repo", repo, "--limit", str(limit),
+            "--json", "tagName,name,publishedAt",
+        ])
+        items = [
+            {
+                "tag_name": r.get("tagName"),
+                "name": r.get("name"),
+                "published_at": r.get("publishedAt"),
+                "html_url": f"https://github.com/{repo}/releases/tag/{r.get('tagName')}",
+            }
+            for r in data
+        ]
+    else:
+        items = rest_raw(f"/repos/{repo}/releases", {"per_page": limit})
+
+    owner, _, name = repo.partition("/")
+    return [
+        {
+            "url": r.get("html_url"),
+            "title": f"{repo} {r.get('tag_name') or ''}".strip(),
+            "owner": owner,
+            "name": name,
+            "stars": None,
+            "updated": r.get("published_at"),
+            "excerpt": (r.get("name") or "")[:400],
+            "tag": r.get("tag_name"),
+            "kind": "release",
+        }
+        for r in items
+    ]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("query")
-    ap.add_argument("--kind", choices=["repo", "code", "issue"], default="repo")
+    ap.add_argument("query", help="Search query, or owner/repo when --kind release")
+    ap.add_argument("--kind", choices=["repo", "code", "issue", "release"], default="repo")
     ap.add_argument("--limit", type=int, default=20)
     args = ap.parse_args()
 
@@ -197,6 +253,8 @@ def main() -> int:
             results = search_repo(args.query, args.limit)
         elif args.kind == "code":
             results = search_code(args.query, args.limit)
+        elif args.kind == "release":
+            results = list_releases(args.query, args.limit)
         else:
             results = search_issue(args.query, args.limit)
     except Exception as e:

@@ -19,16 +19,16 @@ https://openai.com/news/rss.xml
 https://developers.googleblog.com/feeds/posts/default
 https://cloudblog.withgoogle.com/rss/
 
-# --- Spec and protocol repositories (primary sources) ---
-# GitHub serves an Atom feed for any repo's releases or default-branch
-# commits, and github.com is reachable from the cloud sandbox, so this is the
-# most reliable lane in the list. Add a repo as
-# https://github.com/<owner>/<repo>/releases.atom (or /commits/main.atom).
-https://github.com/coinbase/x402/releases.atom
-https://github.com/coinbase/x402/commits/main.atom
-https://github.com/google-agentic-commerce/AP2/releases.atom
-https://github.com/google-agentic-commerce/AP2/commits/main.atom
-https://github.com/modelcontextprotocol/modelcontextprotocol/releases.atom
+# --- Spec and protocol repositories ---
+# NOT here. GitHub answers `releases.atom` and `commits/main.atom` with 403
+# for unauthenticated requests from a datacenter address, so every one of them
+# failed on the scheduled run even with the network wide open. Watch a repo
+# through the GitHub lane instead, which takes a token:
+#
+#   python3 scripts/search_github.py <owner>/<repo> --kind release --limit 5
+#
+# Repos worth watching on this beat: coinbase/x402,
+# google-agentic-commerce/AP2, modelcontextprotocol/modelcontextprotocol.
 
 # --- Trade press (secondary, for independent confirmation) ---
 https://techcrunch.com/category/artificial-intelligence/feed/
