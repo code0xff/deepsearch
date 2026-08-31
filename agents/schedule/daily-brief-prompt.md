@@ -40,6 +40,13 @@ Before committing anything, make sure the site checkout is current:
 git -C "$DEEPSEARCH_SITE" pull --rebase
 ```
 
+Network note: this environment allows github.com and api.github.com, so the
+GitHub lane and git push work. It does NOT allow export.arxiv.org or
+api.semanticscholar.org, so `scripts/search_arxiv.py` and
+`scripts/search_semantic_scholar.py` will fail with a 403 or a connection
+error. That is expected — skip the academic lane rather than working around
+it, and do not treat it as a run failure.
+
 ## Task
 
 Read `.claude/commands/research-daily.md` in the harness checkout and follow it

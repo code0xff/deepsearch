@@ -13,6 +13,7 @@ the local machine, so nothing depends on a laptop being awake.
 | | |
 |---|---|
 | Routine | `deepsearch daily brief — AI agents & agent payments` |
+| ID | `trig_012KfGZAyde2sc4fbGkwDk8M` |
 | Schedule | `0 23 * * *` UTC = **08:00 Asia/Tokyo, daily** |
 | Model | `claude-sonnet-5` |
 | Repos | `code0xff/deepsearch`, `code0xff/reports` |
@@ -50,6 +51,13 @@ config, not from this file.
   not the routine failing — check the run log before assuming otherwise.
 - **A double fire is a no-op.** The brief is keyed by date and exits early if
   today's directory already exists.
+- **The academic lane is unreachable.** The Default environment's Trusted
+  network allowlist covers `github.com` and `api.github.com` but not
+  `export.arxiv.org` or `api.semanticscholar.org`, so `search_arxiv.py` and
+  `search_semantic_scholar.py` fail there. The prompt tells the run to skip
+  that lane rather than treat it as a failure. To restore it, set the
+  environment's network access to **Custom**, keep the default list, and add
+  those two domains.
 
 ### Checking on it
 
