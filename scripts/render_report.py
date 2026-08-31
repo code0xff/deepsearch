@@ -158,8 +158,11 @@ ITALIC = re.compile(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)")
 # Without these the markers render as literal underscores on the built-in path.
 # The word-boundary guards keep snake_case identifiers intact, which is why
 # these are separate patterns rather than a character class in the ones above.
-BOLD_UNDER = re.compile(r"(?<![\w_])__(?!\s)(.+?)(?<!\s)__(?![\w_])")
-ITALIC_UNDER = re.compile(r"(?<![\w_])_(?!\s)(.+?)(?<!\s)_(?![\w_])")
+# The guards are ASCII-only on purpose: the intra-word rule exists to protect
+# identifiers like next_source_id, and those are ASCII, while Korean attaches
+# particles directly to a word — `_(vendor-stated)_로` must still emphasise.
+BOLD_UNDER = re.compile(r"(?<![A-Za-z0-9_])__(?!\s)(.+?)(?<!\s)__(?![A-Za-z0-9_])")
+ITALIC_UNDER = re.compile(r"(?<![A-Za-z0-9_])_(?!\s)(.+?)(?<!\s)_(?![A-Za-z0-9_])")
 LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 
