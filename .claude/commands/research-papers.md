@@ -20,10 +20,14 @@ Steps:
 
 4. **Fetch abstracts** if not already included. Use WebFetch on the arXiv abs URL or the Semantic Scholar page for paywalled ones. Never fabricate quotes from an abstract you have not actually read.
 
-5. **Append** each kept paper to `<site>/<slug>/working/sources.jsonl` (resolve `<site>` via `$DEEPSEARCH_SITE`):
-   ```json
-   {"id":"s<NN>","url":"...","title":"...","authors":["..."],"venue":"...","year":<int>,"type":"paper","trust":1,"accessed":"<YYYY-MM-DD>","quote":"<sentence from abstract or body>","claim_refs":["<claim id>", ...],"citations":<int|null>}
+5. **Append** each kept paper through the harness CLI (it assigns the
+   `id`, stamps `accessed`, and validates the record):
+   ```bash
+   python3 scripts/harness.py add-source <slug> \
+     --json '{"url":"...","title":"...","authors":["..."],"venue":"...","year":<int>,"type":"paper","trust":1,"quote":"<sentence from abstract or body>","claim_refs":["<claim id>"],"citations":<int|null>}'
    ```
+   Repeat `--json` to add the whole sweep in one call; already-cited URLs
+   are skipped automatically.
 
 6. **If a paper seems foundational**, add a line to `working/gaps.md` noting that its references should be traced (citation graph walk) in a later sweep.
 

@@ -1,5 +1,5 @@
 ---
-description: Render the draft to HTML, regenerate the root index, show the diff, and (on user approval) commit and push from the site repo
+description: Run the publish gate, show the diff, and (on user approval) commit and push from the site repo
 argument-hint: <slug>
 ---
 
@@ -7,36 +7,30 @@ You are publishing the report keyed by `$ARGUMENTS`. Follow `PROTOCOL.md`. All r
 
 Steps:
 
-1. **Preconditions** — run (from the harness repo):
+1. **Run the publish gate** (from the harness repo):
    ```bash
-   python3 scripts/harness.py validate-report <slug>
-   python3 scripts/harness.py prepublish-check <slug>
+   python3 scripts/harness.py publish <slug>
    ```
-   If either command fails, stop and report the errors to the user.
+   One call runs `validate-report` → `render-report` → `render-index` → `prepublish-check` and stops at the first failure. It reads `<site>/<slug>/{meta.yaml,draft.md,working/sources.jsonl}` plus `draft.<code>.md` for each alternate language, writes one HTML file per language, and regenerates the root index, the localized indexes, `sitemap.xml`, and `robots.txt`.
 
-2. **Render the report**:
+   If it fails, stop and report the `- …` error lines to the user. `! …` lines are warnings — they do not block publication, but surface them: stale `accessed` dates and never-cited sources usually mean the gather pass left something behind.
+
+   Only drop to `validate-report` / `render-report` / `render-index` / `prepublish-check` individually when you need to debug a specific failing step.
+
+2. **Show the diff** from the site repo — `git -C "$DEEPSEARCH_SITE" status`, `git -C "$DEEPSEARCH_SITE" diff --stat`, and the per-file diffs for the changed `<slug>/` pages and the root `index.html`. Summarise to the user what is about to be committed.
+
+3. **Wait for explicit "commit" approval from the user.** The user may want to edit `meta.yaml` tags, rename the slug, or tweak the draft. Do not push unilaterally.
+
+4. On approval:
    ```bash
-   python3 scripts/harness.py render-report <slug>
+   git -C "$DEEPSEARCH_SITE" add -A
+   git -C "$DEEPSEARCH_SITE" commit -m "report: <slug> — <title>"
+   git -C "$DEEPSEARCH_SITE" push
    ```
-   This reads `<site>/<slug>/{meta.yaml,draft.md,working/sources.jsonl}` and writes `<site>/<slug>/index.html` from the harness template.
+   `add -A` picks up the slug directory, the root and localized indexes, `sitemap.xml`, and `robots.txt` in one go. GitHub Actions in the site repo takes it from there.
 
-3. **Regenerate the root index**:
-   ```bash
-   python3 scripts/harness.py render-index
-   ```
-   This scans every `<site>/*/meta.yaml` (excluding `status: drafting`) and writes `<site>/index.html`.
+5. If `git push` fails on divergent history, stop and surface the error. Never `--force` without the user's explicit permission.
 
-4. **Show the diff** from the site repo — `git -C "$DEEPSEARCH_SITE" status`, `git -C "$DEEPSEARCH_SITE" diff --stat`, and the per-file diffs for the changed `<slug>/index.html` and root `index.html`. Summarise to the user what is about to be committed.
+6. After push, report the expected Pages URL back to the user (e.g. `https://<owner>.github.io/reports/<slug>/`), plus any warnings from step 1.
 
-5. **Wait for explicit "commit" approval from the user.** The user may want to edit `meta.yaml` tags, rename the slug, or tweak the draft. Do not push unilaterally.
-
-6. On approval (run inside the site repo):
-   ```bash
-   cd "$DEEPSEARCH_SITE"
-   git add <slug>/ index.html
-   git commit -m "report: <slug> — <title>"
-   git push
-   ```
-   GitHub Actions in the site repo picks it up from there.
-
-7. After push, report the expected Pages URL back to the user (e.g. `https://<owner>.github.io/reports/<slug>/`).
+Never commit report artefacts inside the harness repo — the push happens from the site repo only.

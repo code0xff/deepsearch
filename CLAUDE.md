@@ -40,20 +40,29 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
    - `/research-web`
    - `/research-papers`
    - `/research-github`
+
+   Every lane appends through the CLI, never by editing the JSONL by hand:
+   ```bash
+   python3 scripts/harness.py add-source <slug> \
+     --json '{"url":"…","title":"…","type":"paper","trust":1,"quote":"…","claim_refs":["c01"]}'
+   ```
+   `id` is assigned for you, `accessed` defaults to today, the schema is
+   checked before anything is written, and an already-cited `url` is
+   skipped. Pass `--json` more than once to add a batch in one call.
 5. Keep `working/gaps.md` current until the gap list is empty or the user accepts the remaining gaps. Also maintain `working/uncertainties.md` for claims that are still immature, vendor-stated, or likely to shift.
 6. Draft **every** language declared in `meta.langs`:
    - `draft.md` — primary (English for new reports unless the user specified otherwise)
    - `draft.<code>.md` — each alternate, plus `title_<code>` / `subtitle_<code>` in meta.yaml
    Sources (`working/sources.jsonl`) are shared across languages; only the prose changes.
 7. Run `/research-verify`.
-8. Run:
+8. Run the whole publish gate in one call:
    ```bash
-   python3 scripts/harness.py validate-report <slug>
-   python3 scripts/harness.py render-report <slug>
-   python3 scripts/harness.py render-index
-   python3 scripts/harness.py prepublish-check <slug>
+   python3 scripts/harness.py publish <slug>
    ```
-9. Once `prepublish-check` passes, **immediately commit and push without asking for confirmation**. Stage all new/modified files, commit with a descriptive message, and push. Do not show the diff or wait for approval — the prepublish-check is the gate.
+   This is `validate-report` → `render-report` → `render-index` →
+   `prepublish-check`, stopping at the first failure. Only drop to the
+   individual subcommands when you need to debug a specific step.
+9. Once `publish` passes, **immediately commit and push without asking for confirmation**. Stage all new/modified files, commit with a descriptive message, and push. Do not show the diff or wait for approval — the publish gate is the gate.
 
 ## Claude-specific rules
 
@@ -66,6 +75,17 @@ Claude Code must not replace or weaken the protocol in `PROTOCOL.md`.
   would be invalid JSONL). When you draft over a scaffold file, use `Write`
   directly — Claude Code's "Read before Write" check is satisfied by the
   placeholder, so you do not need to issue a `Read` first.
+- Those placeholders are also a publish gate: `prepublish-check` rejects a
+  report whose `working/` files still contain them. Write every phase file
+  for real, or the report cannot ship.
+- Resuming a report? Run `python3 scripts/harness.py status <slug>` first.
+  One call reports languages, source count and next id, claim progress,
+  which working files are unwritten, which drafts are stale, and the
+  publish-gate result — cheaper than reading the artefacts back.
+- Run `python3 scripts/harness.py doctor` once per environment. If it
+  reports `markdown` or `yaml` as missing, the harness still works but
+  renders through its built-in fallbacks; installing them changes rendered
+  output, so decide before a site accumulates reports.
 
 ## Common WebFetch failure modes
 
@@ -100,8 +120,8 @@ Claude must maintain the exact report artefacts defined in `PROTOCOL.md`:
 Claude should use `.claude/commands/` as convenience wrappers, but the source of truth for publish readiness is:
 
 ```bash
-python3 scripts/harness.py validate-report <slug>
-python3 scripts/harness.py prepublish-check <slug>
+python3 scripts/harness.py publish <slug>
 ```
 
-No report is published with open `must-fix` items or unresolved citations.
+No report is published with open `must-fix` items, unresolved citations,
+or unwritten `working/` files.

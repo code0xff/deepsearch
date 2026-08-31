@@ -73,7 +73,7 @@ Run `/research-verify` on this report. It writes `working/critique.md` and flags
 
 ## Phase 7 — Publish
 
-Run `/research-publish <slug>`. It should use `python3 scripts/harness.py validate-report`, `render-report`, `render-index`, and `prepublish-check` before staging, then show the user the diff before committing. The user confirms; then commit and push. GitHub Actions deploys.
+Run `/research-publish <slug>`. It runs `python3 scripts/harness.py publish <slug>` — validate-report → render-report → render-index → prepublish-check in one call — then shows the user the diff before committing. The user confirms; then commit and push. GitHub Actions deploys.
 
 ## Execution discipline
 

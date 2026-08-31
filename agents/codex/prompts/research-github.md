@@ -32,10 +32,13 @@ equivalent of `.claude/commands/research-github.md`.
    `curl -sL "<raw.githubusercontent.com url>"` or `gh api` for
    authenticated JSON. Extract a usable quote or code pointer.
 
-5. **Append** to `$DEEPSEARCH_SITE/<slug>/working/sources.jsonl`:
-   ```json
-   {"id":"s<NN>","url":"https://github.com/...","title":"<repo · path or issue title>","authors":["<owner>"],"venue":"GitHub","year":<int|null>,"type":"primary","trust":2,"accessed":"<YYYY-MM-DD>","quote":"<extracted code or prose>","claim_refs":["<claim id>", ...],"stars":<int|null>}
+5. **Append** through the harness CLI:
+   ```bash
+   python3 scripts/harness.py add-source <slug> \
+     --json '{"url":"https://github.com/...","title":"<repo · path or issue title>","authors":["<owner>"],"venue":"GitHub","year":<int|null>,"type":"primary","trust":2,"quote":"<extracted code or prose>","claim_refs":["<claim id>"],"stars":<int|null>}'
    ```
+   Code and canonical repos count as **primary** (trust 2) for technical
+   claims. Random personal repos are **technical** (trust 3) at best.
    Code and canonical repos count as **primary** (trust 2) for
    technical claims. Random personal repos are **technical** (trust 3)
    at best.

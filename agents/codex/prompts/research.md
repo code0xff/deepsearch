@@ -115,8 +115,8 @@ Revise `draft.md` until `critique.md` has no **must-fix** items.
 
 ## Phase 7 — Publish
 
-Apply `prompts/research-publish.md`. That prompt handles validate-report,
-render-report, render-index, prepublish-check, shows the site-repo diff,
+Apply `prompts/research-publish.md`. That prompt runs the single
+`harness.py publish <slug>` gate, shows the site-repo diff,
 and waits for user approval before committing and pushing from inside
 the site repo.
 

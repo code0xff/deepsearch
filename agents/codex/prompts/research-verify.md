@@ -95,3 +95,7 @@ Before handing off to publish, run:
 ```bash
 python3 scripts/harness.py validate-report <slug>
 ```
+
+Warnings (`! …` lines) are not blocking, but a source flagged as never
+cited or last accessed more than 90 days ago is exactly the kind of thing
+this lane exists to catch — fold them into `critique.md`.

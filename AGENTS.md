@@ -74,7 +74,14 @@ approval/sandbox settings.
 4. Gather sources using the phase prompts in
    [`agents/codex/PROMPTS.md`](agents/codex/PROMPTS.md) (web / papers /
    GitHub lanes). The per-lane Codex prompts live in
-   [`agents/codex/prompts/`](agents/codex/prompts/).
+   [`agents/codex/prompts/`](agents/codex/prompts/). Append through the
+   CLI rather than editing the JSONL by hand:
+   ```bash
+   python3 scripts/harness.py add-source <slug> \
+     --json '{"url":"…","title":"…","type":"paper","trust":1,"quote":"…"}'
+   ```
+   It assigns the next `id`, defaults `accessed` to today, validates the
+   record, and skips URLs that are already cited.
 5. Keep `working/gaps.md` current until it is empty or the user accepts
    the remaining gaps. Also maintain `working/uncertainties.md` for
    what remains weakly evidenced, vendor-stated, or likely to change.
@@ -87,13 +94,13 @@ approval/sandbox settings.
    the prose changes.
 7. Run the self-critique prompt (`agents/codex/prompts/research-verify.md`)
    and revise until `working/critique.md` has no `must-fix` items.
-8. Run:
+8. Run the publish gate in one call:
    ```bash
-   python3 scripts/harness.py validate-report <slug>
-   python3 scripts/harness.py render-report <slug>
-   python3 scripts/harness.py render-index
-   python3 scripts/harness.py prepublish-check <slug>
+   python3 scripts/harness.py publish <slug>
    ```
+   This is `validate-report` → `render-report` → `render-index` →
+   `prepublish-check`, stopping at the first failure. Drop to the
+   individual subcommands only to debug a failing step.
 9. Show the site-repo diff (`git -C "$DEEPSEARCH_SITE" diff`) and wait
    for explicit user approval. Commit and push happen **inside the site
    repo**, not the harness repo.
@@ -133,12 +140,18 @@ Codex must maintain the exact report artefacts defined in `PROTOCOL.md`:
 The source of truth for publish readiness is:
 
 ```bash
-python3 scripts/harness.py validate-report <slug>
-python3 scripts/harness.py prepublish-check <slug>
+python3 scripts/harness.py publish <slug>
 ```
 
-No report is published with open `must-fix` items or unresolved citations.
+No report is published with open `must-fix` items, unresolved citations,
+or `working/` files still holding their `init-report` placeholder.
 Commit and push are the user's call, not Codex's.
+
+To resume a report without re-reading its artefacts:
+
+```bash
+python3 scripts/harness.py status <slug>
+```
 
 ## Smoke test
 
@@ -148,7 +161,10 @@ Before driving a real report, verify the harness works end-to-end:
 bash scripts/smoke.sh
 ```
 
-This initializes a throwaway report in a temp site, runs validate →
-render → render-index → prepublish-check, and cleans up. A non-zero exit
-code means the environment (Python, pyyaml, markdown) is not ready for
-Codex to drive the harness.
+This initializes a throwaway report in a temp site, exercises
+`doctor → init-report → add-source → status → validate-report → publish`,
+checks that the publish gate rejects unwritten working files, and cleans
+up. A non-zero exit code means the environment is not ready for Codex to
+drive the harness. `python3 scripts/harness.py doctor` reports the same
+environment facts on their own — including whether `pyyaml` and
+`markdown` are installed, which changes rendered output.

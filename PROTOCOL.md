@@ -43,7 +43,8 @@ Paths in this document written as `<slug>/…` are relative to the site repo roo
 ```
 
 Slug directories sit flat at the site repo root. The names `assets`,
-`index`, `ko`, `reports`, `readme`, `.git`, `.github`, and `.nojekyll` are
+`index`, `reports`, `readme`, `robots`, `sitemap`, `.git`, `.github`,
+`.nojekyll`, and every supported language code (currently `en`, `ko`) are
 reserved and cannot be used as slugs.
 
 `working/` is part of the audit trail and is shared across all language
@@ -100,7 +101,9 @@ The loop ends only when `working/gaps.md` is empty or the user explicitly accept
 - Claims must be falsifiable statements, not vague topics.
 
 ### Gather
-- Collect sources into `working/sources.jsonl`.
+- Collect sources into `working/sources.jsonl` via
+  `harness.py add-source`, which assigns ids and validates the schema.
+  Do not hand-append lines.
 - Use the right lane for the claim: web, papers, or GitHub/code.
 - Check off claims only when the minimum source threshold is satisfied.
 - For emerging standards, vendor-led ecosystems, or rapidly moving
@@ -150,9 +153,11 @@ Minimum sourcing:
   uncertainties.
 
 ### Publish
-- `validate-report` must pass.
-- `prepublish-check` must pass.
-- `render-report` and `render-index` must be rerun before commit.
+- `publish` must pass. It is `validate-report` → `render-report` →
+  `render-index` → `prepublish-check` in one run; the individual
+  commands stay available for debugging a failing step.
+- No report ships with a `working/` file still holding its `init-report`
+  placeholder — that means the phase was never done.
 - Commit and push happen inside the **site repo**, not the harness repo.
 - Commit and push require explicit user approval.
 
@@ -216,10 +221,42 @@ The provider-neutral CLI entrypoint is `python3 scripts/harness.py`. Every subco
 Commands:
 
 - `init-report <topic> [--slug ...] [--lang ko|en] [--langs en,ko] [--mono] [--site ...]`
+- `add-source <slug> [--json '<record>' ...] [--stdin] [--allow-duplicate] [--site ...]`
 - `validate-report <slug> [--site ...]`
 - `render-report <slug> [--site ...]`
 - `render-index [--site ...]`
 - `prepublish-check <slug> [--site ...]`
+- `publish <slug> [--site ...]`
+- `status <slug> [--site ...]`
+- `doctor [--site ...]`
+
+`add-source` is the supported way to grow `working/sources.jsonl`. It
+assigns the next free `id`, defaults `accessed` to today, validates the
+record against §4 before writing, and skips a record whose `url` is
+already cited (override with `--allow-duplicate`). Records come from
+repeated `--json` flags or JSONL on stdin. Nothing is appended if any
+record fails validation, so a rejected batch never leaves a half-written
+file behind. Agents should not hand-append lines to `sources.jsonl`.
+
+`publish` runs the whole publish gate in one process — `validate-report`,
+`render-report`, `render-index`, `prepublish-check`, in that order,
+stopping at the first failure. It is the preferred entry point; the
+individual commands remain available for debugging a specific step.
+
+`status` prints the state of one report — declared languages, source
+count and next id, checked/total claims, which working files are still
+placeholders, which drafts are rendered or stale, and the current
+publish-gate result. Use it to resume a report without re-reading its
+artefacts.
+
+`doctor` checks the runtime: Python version, whether `pyyaml` and
+`markdown` are importable, the site path, `assets/style.css`, the report
+template, and the `gh` CLI. Run it once per environment.
+
+Validation is split into **errors**, printed as `- …`, which block the
+gate, and **warnings**, printed as `! …`, which do not. Warnings cover
+sources never cited by any draft, duplicate URLs, and sources last
+accessed more than 90 days ago.
 
 `init-report` populates every scaffold file with a one-line placeholder
 comment except `working/sources.jsonl`, which stays empty (a placeholder
@@ -294,7 +331,20 @@ All adapters share a provider-neutral health check:
 bash scripts/smoke.sh
 ```
 
-This initialises a throwaway report in a temp site, runs
-`init-report → validate-report → render-report → render-index →
-prepublish-check`, and cleans up. Adapters should recommend running it
-once per environment before the first real report.
+This initialises a throwaway report in a temp site, runs `doctor →
+init-report → add-source → status → validate-report → publish`, asserts
+that the publish gate rejects a placeholder working file and that the
+renderer emits real list/quote/table markup, and cleans up. Adapters
+should recommend running it once per environment before the first real
+report.
+
+## 10. Rendering dependencies
+
+`pyyaml` and `markdown` are optional. Without them the harness falls back
+to a built-in meta parser and a built-in block renderer that covers
+headings, paragraphs, fenced code, GFM tables, ordered and unordered
+lists (including nesting), blockquotes, and horizontal rules — but not
+smart quotes or the `toc` extension. `harness.py doctor` reports which
+path is active. Reports rendered on one path and re-rendered on the other
+will produce cosmetic diffs, so keep a site repo on a single
+configuration.
