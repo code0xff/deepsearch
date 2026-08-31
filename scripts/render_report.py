@@ -153,6 +153,13 @@ def try_markdown(text: str) -> str:
 INLINE_CODE = re.compile(r"`([^`]+)`")
 BOLD = re.compile(r"\*\*(.+?)\*\*")
 ITALIC = re.compile(r"(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)")
+# Underscore emphasis matters because the protocol's own qualifier markers are
+# written that way — `_(vendor-stated)_`, `_(unverified — single source)_`.
+# Without these the markers render as literal underscores on the built-in path.
+# The word-boundary guards keep snake_case identifiers intact, which is why
+# these are separate patterns rather than a character class in the ones above.
+BOLD_UNDER = re.compile(r"(?<![\w_])__(?!\s)(.+?)(?<!\s)__(?![\w_])")
+ITALIC_UNDER = re.compile(r"(?<![\w_])_(?!\s)(.+?)(?<!\s)_(?![\w_])")
 LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 
@@ -160,7 +167,9 @@ def inline(s: str) -> str:
     s = html.escape(s, quote=False)
     s = INLINE_CODE.sub(lambda m: f"<code>{m.group(1)}</code>", s)
     s = BOLD.sub(lambda m: f"<strong>{m.group(1)}</strong>", s)
+    s = BOLD_UNDER.sub(lambda m: f"<strong>{m.group(1)}</strong>", s)
     s = ITALIC.sub(lambda m: f"<em>{m.group(1)}</em>", s)
+    s = ITALIC_UNDER.sub(lambda m: f"<em>{m.group(1)}</em>", s)
     s = LINK.sub(lambda m: f'<a href="{m.group(2)}">{m.group(1)}</a>', s)
     return s
 
