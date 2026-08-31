@@ -32,6 +32,20 @@ import urllib.request
 API = "https://api.github.com"
 
 
+# A cloud sandbox that authenticates GitHub through its own proxy sets both
+# token variables to this literal instead of a key. Sending it as a bearer
+# token authenticates nothing and turns a working anonymous request into a 401.
+PROXY_PLACEHOLDER = "proxy-injected"
+
+
+def github_token() -> str | None:
+    """The caller's GitHub token, or None when there isn't a usable one."""
+    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    if not token or token == PROXY_PLACEHOLDER:
+        return None
+    return token
+
+
 def have_gh() -> bool:
     return shutil.which("gh") is not None
 
@@ -64,7 +78,7 @@ def _rest(path: str, params: dict):
         "X-GitHub-Api-Version": "2022-11-28",
         "User-Agent": "deepsearch-harness/0.1",
     }
-    token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+    token = github_token()
     if token:
         headers["Authorization"] = f"Bearer {token}"
     url = f"{API}{path}?{urllib.parse.urlencode(params)}"
@@ -74,7 +88,7 @@ def _rest(path: str, params: dict):
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         detail = ""
-        if e.code in (401, 403, 422, 429) and not token:
+        if e.code in (401, 403, 422, 429) and not github_token():
             detail = (" — set GITHUB_TOKEN. Unauthenticated search allows only 10 "
                       "requests/minute (429 past that) and code search is rejected "
                       "outright")
