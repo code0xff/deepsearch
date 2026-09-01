@@ -439,7 +439,7 @@ configuration.
 - `builtin` — ignore both even if installed, and always use the fallbacks.
 
 Set `builtin` wherever the harness runs somewhere you do not control the
-installed packages — a scheduled cloud routine, CI — when the site was
+installed packages — an unattended schedule, CI — when the site was
 seeded without them. Otherwise the first run on an image that happens to
 ship `markdown` re-renders every page in the site on its next
 `render-index`, and the brief's own commit arrives buried in a

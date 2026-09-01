@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.code0xff.deepsearch-daily-brief</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>$HOME/workspace/deepsearch/agents/schedule/run-local.sh</string>
+  </array>
+
+  <!-- 08:07 rather than 08:00: the hour is approximate, and an off-minute
+       keeps this off the same instant every other scheduler fires on. -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>8</integer>
+    <key>Minute</key><integer>7</integer>
+  </dict>
+
+  <!-- launchd runs a missed StartCalendarInterval as soon as the machine wakes,
+       so a closed lid at 08:07 delays the brief rather than skipping the day. -->
+  <key>RunAtLoad</key>
+  <false/>
+
+  <key>StandardOutPath</key>
+  <string>$HOME/.local/state/deepsearch/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>$HOME/.local/state/deepsearch/launchd.err.log</string>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

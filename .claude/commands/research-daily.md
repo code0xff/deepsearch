@@ -13,8 +13,8 @@ you have covered before. This is the unattended variant of `/research`. Re-read
 Report artefacts live in the site repo resolved via `$DEEPSEARCH_SITE` (default:
 `../reports`). All `<slug>/…` paths below are relative to that site repo root.
 
-This command is designed to run with **no human in the loop** (a scheduled
-cloud routine). That means two things: never stop to ask a question, and never
+This command is designed to run with **no human in the loop** (a scheduled,
+unattended run). That means two things: never stop to ask a question, and never
 publish filler. The two escape hatches below — already-ran and quiet-day — are
 successful outcomes, not failures.
 

@@ -83,8 +83,8 @@ survive, and commits
 and pushes on a clean publish gate without asking. Re-running it on a date that
 already has a brief is a no-op.
 
-It is also the command a scheduled cloud routine invokes; see
-`agents/schedule/README.md` for the routine that drives it.
+It is also the command the daily schedule invokes; see
+`agents/schedule/README.md` for the LaunchAgent that drives it.
 
 ## Claude-specific rules
 
@@ -113,7 +113,7 @@ It is also the command a scheduled cloud routine invokes; see
   reports `markdown` or `yaml` as missing, the harness still works but
   renders through its built-in fallbacks; installing them changes rendered
   output, so decide before a site accumulates reports. Where you do not
-  control the image — a scheduled cloud routine — set
+  control what the host has installed — an unattended schedule — set
   `DEEPSEARCH_RENDERER=builtin` so the run cannot silently switch paths and
   re-render the whole site.
 
