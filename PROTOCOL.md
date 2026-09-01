@@ -252,6 +252,15 @@ coverage that quotes it — which is the better citation regardless. When a stor
 exists only on one of those platforms, that is recorded as a gap, not worked
 around.
 
+**Threads is searchable but not wired up.** Alone among the three it offers a
+free public keyword search API, and its filters line up with this protocol's
+window and source schema. Two things keep it out: public posts require App
+Review approval of `threads_keyword_search` — before that the endpoint returns
+only the authenticated user's own posts — and a social post is a trust-tier-low
+pointer to a primary source, which the feeds lane already reaches directly for
+most publishers on a given beat. Adding it is justified when a beat's important
+publishers have no feed and announce there first, not before.
+
 ## 5. Trust hierarchy
 
 1. Peer-reviewed papers

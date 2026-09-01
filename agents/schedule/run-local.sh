@@ -17,6 +17,18 @@ export DEEPSEARCH_SITE="${DEEPSEARCH_SITE:-$HOME/workspace/reports}"
 export DEEPSEARCH_RENDERER=builtin
 export DEEPSEARCH_TZ=Asia/Tokyo
 
+# Optional lane credentials live outside the repo so a filled-in file can never
+# be committed. Absent is a supported state: each lane reports itself
+# unavailable and the brief runs without it.
+ENV_FILE="${DEEPSEARCH_ENV:-$HOME/.config/deepsearch/env}"
+if [ -f "$ENV_FILE" ]; then
+  perms=$(stat -f '%Lp' "$ENV_FILE" 2>/dev/null || echo "")
+  case "$perms" in
+    *[0-9][1-7][0-7]|*[0-9][0-7][1-7]) echo "warning: $ENV_FILE is group/world readable (mode $perms); chmod 600 it" >&2 ;;
+  esac
+  set -a; . "$ENV_FILE"; set +a
+fi
+
 STATE="$HOME/.local/state/deepsearch"
 mkdir -p "$STATE"
 LOG="$STATE/brief-$(TZ=$DEEPSEARCH_TZ date +%F).log"
@@ -43,6 +55,17 @@ done
 cd "$HARNESS" || exit 1
 
 log "start — harness=$HARNESS site=$DEEPSEARCH_SITE date=$(python3 scripts/harness.py today)"
+
+# A lane whose credentials vanish degrades quietly: search_social.py reports it
+# unavailable, the brief notes it in gaps.md, and the day still looks normal.
+# Recording the state each run is what makes "this lane has been down for a
+# week" visible in the logs.
+lanes=""
+[ -n "${BLUESKY_HANDLE:-}" ] && [ -n "${BLUESKY_APP_PASSWORD:-}" ] && lanes="$lanes bluesky"
+[ -n "${REDDIT_CLIENT_ID:-}" ] && [ -n "${REDDIT_CLIENT_SECRET:-}" ] && lanes="$lanes reddit"
+[ -n "${SEMANTIC_SCHOLAR_API_KEY:-}" ] && lanes="$lanes semantic-scholar"
+command -v gh >/dev/null && gh auth status >/dev/null 2>&1 && lanes="$lanes github(gh)"
+log "credentialed lanes:${lanes:- none — hackernews, feeds, web and arxiv still work}"
 
 # --allowedTools mirrors the permission surface the cloud routine ran with, so
 # the brief cannot reach for anything it did not already have. --add-dir is what

@@ -17,6 +17,57 @@ Logs land in `~/.local/state/deepsearch/brief-<date>.log`, one per day, pruned
 after 30 days. `launchctl print gui/$(id -u)/com.code0xff.deepsearch-daily-brief`
 shows the last exit code.
 
+## Optional lane credentials
+
+Feeds, Hacker News, web and arXiv need nothing. Bluesky, Reddit and Semantic
+Scholar take free credentials, and `run-local.sh` sources them from
+`~/.config/deepsearch/env` (override with `DEEPSEARCH_ENV`):
+
+```bash
+cp agents/schedule/env.example ~/.config/deepsearch/env
+chmod 600 ~/.config/deepsearch/env
+$EDITOR ~/.config/deepsearch/env
+```
+
+`env.example` says where to issue each one. The file lives outside the repo so
+a filled copy cannot be committed; the runner warns if it is group- or
+world-readable. Use a Bluesky **app password**, never the account password —
+it can be revoked on its own and cannot change the account.
+
+Every one of these is optional. A lane with no credentials reports itself
+unavailable, the brief records that in `working/gaps.md`, and the run
+continues. That is also the hazard: a credential that expires degrades the
+brief without failing it, and the day still looks normal. Each run therefore
+logs which lanes were credentialed, so a lane that has been dark for a week is
+visible in the logs rather than only in the gaps of published briefs.
+
+**GitHub is deliberately not in that file.** `gh` is authenticated on this
+machine and `search_github.py` prefers it, so a PAT would be a second
+credential to rotate for no gain.
+
+### Threads, X, LinkedIn
+
+X has had no free read tier since February 2026 and LinkedIn has no
+third-party API for public post search, so both reach the harness only through
+the coverage that quotes them ([`PROTOCOL.md`](../../PROTOCOL.md) §4.1).
+
+Threads is the one of the three with a free public search API, and its
+`/keyword_search` endpoint maps onto this harness almost exactly: `since` and
+`until` take the window, `search_type=RECENT` orders it, and the response
+carries `permalink`, `timestamp`, `username` and `text` — the `add-source`
+fields. The limit is 2,200 queries per rolling 24 hours against a workload
+that uses about twenty.
+
+It is not wired up, for two reasons. **Public posts require App Review**: until
+`threads_keyword_search` is granted advanced access, the endpoint searches only
+the authenticated user's own posts, which is useless here. And the payoff is
+unproven — a social post is a trust-tier-low *pointer* to a primary source, and
+the vendors on this beat that matter most already publish RSS the feeds lane
+reads. Threads would earn its place if the feedless vendors named in
+`config/feeds.txt` announce there first; confirm that before paying for App
+Review. Note also that its long-lived token expires after 60 days and must be
+refreshed, which for an unattended job is another way to fail silently.
+
 ## Why local rather than a cloud routine
 
 This started as a Claude Code cloud routine, and the routine still exists —
