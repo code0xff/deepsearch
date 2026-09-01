@@ -22,8 +22,16 @@ Then set up from the harness checkout:
 cd <deepsearch checkout>
 export DEEPSEARCH_SITE=<absolute path to the reports checkout>
 export DEEPSEARCH_RENDERER=builtin
+export DEEPSEARCH_TZ=Asia/Tokyo
 python3 scripts/harness.py doctor
 ```
+
+`DEEPSEARCH_TZ=Asia/Tokyo` is what makes the brief's date mean today. This
+runner keeps UTC, and the routine fires at 23:00 UTC — the previous date — so
+without it the run dates its brief yesterday, finds yesterday's brief already
+published, and exits `already ran` every single day. Take the date from
+`python3 scripts/harness.py today`, never from `date`. `doctor` prints the
+resolved date; check it before anything else.
 
 `DEEPSEARCH_RENDERER=builtin` is mandatory. The site was seeded on a machine
 without `pyyaml` and `markdown`, so if this image happens to ship them the

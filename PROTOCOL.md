@@ -107,9 +107,17 @@ runs the same seven phases and every invariant in §3, with four changes:
   already-covered stories is a protocol violation.
 - **Two gather sweeps, not six.** Whatever is still thin after the second sweep
   goes to `gaps.md` and the Limitations section. A brief ships same-day.
-- **Idempotent.** A brief is keyed `<prefix>-<YYYY-MM-DD>` and the date comes
-  from the system clock. If that directory exists, the run is a no-op, so a
-  double-fired schedule cannot produce a second brief or overwrite the first.
+- **Idempotent.** A brief is keyed `<prefix>-<YYYY-MM-DD>`. If that directory
+  exists, the run is a no-op, so a double-fired schedule cannot produce a second
+  brief or overwrite the first.
+- **The date comes from `harness.py today`, not from the shell.** Idempotency
+  makes the calendar load-bearing: a run that dates itself a day early finds the
+  previous brief and exits `already ran`, which looks exactly like a successful
+  no-op. `DEEPSEARCH_TZ` names the calendar — an IANA zone or a fixed offset —
+  and both the slug and `meta.date` derive from it, so they cannot disagree.
+  Set it wherever a brief runs on a schedule: a cloud runner keeps UTC, so a
+  brief scheduled for a morning east of Greenwich fires on the previous UTC
+  date and would otherwise never advance (§10).
 
 The window is the last **72 hours** by default. A 24-hour window drops weekend
 and holiday news, and the URL dedupe already removes the overlap.

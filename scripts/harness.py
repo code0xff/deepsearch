@@ -13,6 +13,8 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from common import (
+    DEEPSEARCH_TZ,
+    TimezoneUnavailable,
     FORCE_BUILTIN,
     PLACEHOLDER_RE,
     RESERVED_SLUGS,
@@ -27,6 +29,7 @@ from common import (
     next_source_id,
     output_path,
     resolve_lang_list,
+    today,
 )
 from paths import REPO, add_site_arg, resolve_site, site_reports
 from render_index import render_index
@@ -126,7 +129,7 @@ def parse_accessed(value: object) -> date | None:
 
 
 def stale_source_ids(sources: dict[str, dict]) -> list[str]:
-    cutoff = date.today() - timedelta(days=STALE_SOURCE_DAYS)
+    cutoff = today() - timedelta(days=STALE_SOURCE_DAYS)
     stale = []
     for sid, source in sources.items():
         when = parse_accessed(source.get("accessed"))
@@ -160,7 +163,7 @@ def validate_source_record(source: dict, sid: str) -> list[str]:
         when = parse_accessed(accessed)
         if when is None:
             errors.append(f"{sid}: accessed must be a real YYYY-MM-DD date, got {accessed!r}")
-        elif when > date.today():
+        elif when > today():
             errors.append(f"{sid}: accessed is in the future ({accessed})")
 
     quote = source.get("quote")
@@ -401,7 +404,7 @@ def cmd_init_report(args: argparse.Namespace) -> int:
         "slug": slug,
         "lang": lang,
         "langs": list(langs),
-        "date": date.today().isoformat(),
+        "date": today().isoformat(),
         "tags": [],
         "status": "drafting",
     })
@@ -556,7 +559,7 @@ def cmd_add_source(args: argparse.Namespace) -> int:
         elif sid in existing or any(sid == s for s, _ in added):
             errors.append(f"record {position}: id {sid} already exists")
             continue
-        record.setdefault("accessed", date.today().isoformat())
+        record.setdefault("accessed", today().isoformat())
         rec_errors = validate_source_record(record, sid)
         errors.extend(f"record {position}: {e}" for e in rec_errors)
         if rec_errors:
@@ -695,12 +698,38 @@ def cmd_seen_urls(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_today(args: argparse.Namespace) -> int:
+    """Print the date the harness would stamp on a report created right now.
+
+    A standing brief derives its slug from this, so the prompt must ask the
+    harness rather than the shell: `date +%F` answers with the runner's clock,
+    which is UTC on a cloud runner and therefore a day behind a brief scheduled
+    for a morning in Asia.
+    """
+    try:
+        print(today().isoformat())
+    except TimezoneUnavailable as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     """Check that the runtime can actually drive the harness."""
     site = resolve_site(args.site)
     ok = True
 
     print(f"python: {sys.version.split()[0]} ({sys.executable})")
+
+    if DEEPSEARCH_TZ:
+        try:
+            print(f"date: {today()} (DEEPSEARCH_TZ={DEEPSEARCH_TZ})")
+        except TimezoneUnavailable as exc:
+            print(f"date: UNRESOLVABLE — {exc}")
+            ok = False
+    else:
+        print(f"date: {today()} (system clock; set DEEPSEARCH_TZ to date by a "
+              f"fixed calendar — required for a scheduled brief)")
 
     if FORCE_BUILTIN:
         print("renderer: builtin (pinned by DEEPSEARCH_RENDERER=builtin)")
@@ -816,6 +845,9 @@ def build_parser() -> argparse.ArgumentParser:
                               help="Classify this candidate URL as seen or new. Repeatable.")
     add_site_arg(seen_urls_ap)
     seen_urls_ap.set_defaults(func=cmd_seen_urls)
+
+    today_ap = sub.add_parser("today", help="Print the date the harness dates reports by")
+    today_ap.set_defaults(func=cmd_today)
 
     doctor_ap = sub.add_parser("doctor", help="Check the runtime can drive the harness")
     add_site_arg(doctor_ap)

@@ -116,6 +116,13 @@ entries. Rules live in
 `.claude/commands/research-daily.md` and
 `agents/codex/prompts/research-daily.md`.
 
+A brief's date comes from `python3 scripts/harness.py today`, which reads
+`DEEPSEARCH_TZ` (an IANA zone like `Asia/Tokyo`, or a fixed offset like
+`+09:00`) and falls back to the system clock. Set it for any scheduled brief:
+runners keep UTC, so a brief scheduled for a morning in Asia fires on the
+previous UTC date, dates itself yesterday, and then no-ops against yesterday's
+brief. `doctor` prints the resolved date.
+
 Briefs are meant to run unattended on a schedule.
 [`agents/schedule/README.md`](agents/schedule/README.md) documents the Claude
 Code cloud routine that drives one daily.

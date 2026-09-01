@@ -8,6 +8,7 @@ there is exactly one definition of each rule.
 """
 from __future__ import annotations
 
+import datetime
 import html
 import json
 import os
@@ -25,6 +26,48 @@ from paths import harness_repo_url
 # an unknown image stays byte-compatible with the environment that seeded the
 # site. `harness.py doctor` reports which path is active.
 FORCE_BUILTIN = os.environ.get("DEEPSEARCH_RENDERER", "auto").strip().lower() == "builtin"
+
+# A standing brief is keyed by date, and "today" is a question about the
+# reader's calendar, not the machine's. A cloud runner is UTC, so a routine
+# scheduled for 08:00 in Asia/Tokyo fires at 23:00 UTC the *previous* day: left
+# to the system clock, every run would date its brief yesterday and then find
+# yesterday's brief already published. DEEPSEARCH_TZ names the calendar the
+# harness dates by, as an IANA zone (`Asia/Tokyo`) or a fixed offset
+# (`+09:00`). Unset means the system clock, which is right for a laptop.
+DEEPSEARCH_TZ = os.environ.get("DEEPSEARCH_TZ", "").strip()
+
+OFFSET_TZ_RE = re.compile(r"^(?P<sign>[+-])(?P<h>\d{2}):?(?P<m>\d{2})$")
+
+
+class TimezoneUnavailable(RuntimeError):
+    """DEEPSEARCH_TZ was set to something this machine cannot resolve."""
+
+
+def _tzinfo(name: str):
+    match = OFFSET_TZ_RE.match(name)
+    if match:
+        delta = datetime.timedelta(hours=int(match["h"]), minutes=int(match["m"]))
+        return datetime.timezone(-delta if match["sign"] == "-" else delta)
+    try:
+        from zoneinfo import ZoneInfo
+    except ImportError as exc:  # pragma: no cover - Python < 3.9
+        raise TimezoneUnavailable(f"zoneinfo is unavailable, so {name!r} cannot be resolved") from exc
+    try:
+        return ZoneInfo(name)
+    except Exception as exc:
+        # Falling back to UTC here would silently reintroduce the off-by-a-day
+        # this setting exists to prevent, so fail where someone will see it.
+        raise TimezoneUnavailable(
+            f"cannot resolve DEEPSEARCH_TZ={name!r} — the tz database is probably "
+            f"missing (install tzdata), or use a fixed offset like +09:00"
+        ) from exc
+
+
+def today() -> datetime.date:
+    """The current date on the calendar the harness dates reports by."""
+    if not DEEPSEARCH_TZ:
+        return datetime.date.today()
+    return datetime.datetime.now(_tzinfo(DEEPSEARCH_TZ)).date()
 
 if FORCE_BUILTIN:
     yaml = None

@@ -20,10 +20,16 @@ successful outcomes, not failures.
 
 ## Phase 0 — Orient
 
-1. Get today's date from the system; never infer it from context:
+1. Get today's date from the harness, never from context and never from the
+   shell — `date` answers with the runner's clock, which on a cloud runner is
+   UTC and so a day behind a brief scheduled for a morning in Asia:
    ```bash
-   date -u +%F
+   python3 scripts/harness.py today
    ```
+   This is the same calendar `init-report` stamps into `meta.yaml`, so the slug
+   and the report's own date cannot disagree. Set `DEEPSEARCH_TZ` (an IANA zone
+   like `Asia/Tokyo`, or a fixed offset like `+09:00`) wherever the brief runs
+   unattended; it is what makes the answer independent of the runner.
 2. `<slug>` = `<prefix>-<YYYY-MM-DD>`.
 3. **Already-ran check.** If `$DEEPSEARCH_SITE/<slug>/` exists, today's brief is
    already done. Print `already ran: <slug>` and **stop**. Do not resume, do not

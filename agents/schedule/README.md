@@ -51,6 +51,16 @@ config, not from this file.
   not the routine failing — check the run log before assuming otherwise.
 - **A double fire is a no-op.** The brief is keyed by date and exits early if
   today's directory already exists.
+- **`DEEPSEARCH_TZ` is what makes "today" mean today.** The cloud runner's clock
+  is UTC, so a routine scheduled for 08:00 Asia/Tokyo fires at 23:00 UTC on the
+  *previous* date. Without this variable the run dates its brief yesterday,
+  finds yesterday's brief already published, and exits `already ran` — every
+  day, silently, with a `success` status. Observed on the 2026-09-01 fire: 38
+  seconds, no output. Set `DEEPSEARCH_TZ=Asia/Tokyo` in the environment's
+  Environment variables (it names a calendar, not a secret) and confirm with
+  `python3 scripts/harness.py doctor`, which prints the resolved date. If the
+  image lacks the tz database, `doctor` fails loudly rather than falling back to
+  UTC; use a fixed offset like `+09:00` in that case.
 - **Set `GITHUB_TOKEN`.** Without it the GitHub lane's REST fallback gets 429
   after 10 search requests a minute, which is what the second scheduled run
   hit. Add it as an environment API credential.
