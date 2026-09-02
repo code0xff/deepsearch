@@ -64,7 +64,19 @@ judgment calls about a single sentence. Citations and claims must survive the
 rewrite unchanged — moving a `[^sNN]` ref off the sentence it supports is a
 correctness bug, not a style edit.
 
-### 6. Must-fix vs nit
+### 6. Diagrams
+`PROTOCOL.md` §3 → Draft → Diagrams governs these. Check that each one earns
+its place (delete it — does the reader lose anything?), that its caption cites
+what its arrows assert, that both languages carry it with translated labels,
+and that the **rendered page** shows a figure rather than a syntax-error box.
+That last one is not optional: a malformed diagram renders, publishes, and
+fails only in the reader's browser.
+
+Sections that describe a message order, a state machine, a delegation chain or
+a topology and have no diagram are worth flagging as a **nit** with a proposed
+one.
+
+### 7. Must-fix vs nit
 Classify each finding as **must-fix** or **nit**. The report does not ship with any must-fix open.
 
 After producing `critique.md`, briefly summarise the count (must-fix / nits) to the user, then revise `draft.md` accordingly. Re-run this command after revision until no must-fix remain.

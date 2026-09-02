@@ -222,6 +222,37 @@ Claude Code loads the `plain-prose` skill for the full revision pass, including
 the self-grep that catches repeated openers. Adapters without skill support
 apply the list above directly.
 
+#### Diagrams
+
+Use one wherever the thing being explained is a shape: a message order, a state
+machine, a delegation chain, a topology, a decision boundary. Prose describing
+who signs what and in which order costs the reader a paragraph of bookkeeping
+that a sequence diagram hands over at a glance. Reach for a diagram
+deliberately rather than sparingly.
+
+A diagram is not decoration, and the test is subtractive: if deleting it costs
+the reader nothing, it was decoration. Three boxes restating a sentence, or a
+picture of a list, fail that test.
+
+- **Mermaid in a fenced block**, nothing else. The renderer converts a
+  ```` ```mermaid ```` fence into `<pre class="mermaid">` and injects the
+  mermaid runtime **only** into pages that contain one, so a report without a
+  diagram carries no extra weight. Raw HTML and inline SVG are escaped by the
+  renderer and will publish as literal text.
+- **Every diagram is a figure.** Give it a caption line immediately below
+  (`_Figure N — …_`) carrying the citations its content rests on. A diagram
+  asserts things, so it is held to the sourcing rules in §3, not exempted from
+  them: an arrow that no source supports is an unsupported claim.
+- **Both languages get the diagram.** The mermaid source is shared; translate
+  the labels and the caption.
+- **`;` ends a statement in a sequence diagram**, so it cannot appear inside a
+  message or note label. `<br/>` for a line break is fine. `prepublish-check`
+  rejects this and the other mechanical traps.
+- **Render the page before publishing.** A malformed diagram does not fail the
+  build: it reaches the reader as a "Syntax error" box where the figure should
+  be. `prepublish-check` catches the known traps but does not parse mermaid, so
+  a diagram is only verified once its page has actually been opened.
+
 ### Critique
 - Write `working/critique.md`.
 - The report does not ship with open `must-fix` items.
@@ -229,6 +260,9 @@ apply the list above directly.
   reasoning, source diversity and independence, missing
   counter-evidence, and whether the draft honestly surfaces important
   uncertainties.
+- Critique checks that each diagram still matches the prose it sits beside and
+  that its caption cites the sources its arrows rest on, and that the rendered
+  page shows a figure rather than a syntax-error box.
 - Critique also enforces the Voice rules above. Mechanical findings — a
   section formula repeated across items, a rhyming bullet list, a
   parallel-march closer — are `must-fix`, because each is evidence that a

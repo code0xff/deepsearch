@@ -69,7 +69,15 @@ incomplete — add it to `gaps.md` and mark this critique item
 - If the topic is new or still moving quickly, are the conclusions
   appropriately scoped instead of written as settled fact?
 
-## 7. Voice
+## 7. Diagrams
+
+Per `PROTOCOL.md` §3 → Draft → Diagrams: each diagram must earn its place
+(delete it — does the reader lose anything?), carry a caption citing what its
+arrows assert, appear in both languages with translated labels, and render as a
+figure rather than a syntax-error box on the actual page. A malformed diagram
+publishes silently and fails only in the reader's browser.
+
+## 8. Voice
 
 Apply `PROTOCOL.md` §3 → Draft → Voice to every `draft*.md`, each language
 separately. Do the mechanical checks with `grep` rather than from memory:
@@ -105,7 +113,7 @@ Mechanical voice findings are **must-fix**; single-sentence judgment calls are
 - For bilingual reports: do the alternate-language drafts say the same
   thing as the primary, or have they drifted?
 
-## 8. Must-fix vs nit
+## 9. Must-fix vs nit
 
 Classify each finding as **must-fix** or **nit**. The report does not
 ship with any must-fix open.

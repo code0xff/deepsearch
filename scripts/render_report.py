@@ -247,6 +247,90 @@ def render_list_block(block: list[str]) -> str:
     return "\n".join(parts)
 
 
+MERMAID_VERSION = "11.17.2"
+
+MERMAID_FENCE_RE = re.compile(
+    r'<pre><code class="language-mermaid">(.*?)</code></pre>', re.DOTALL
+)
+
+
+def fenced_block(code_lines: list[str], lang: str) -> str:
+    """Render one fenced block.
+
+    Only ``mermaid`` is special-cased, and deliberately so: every other fence
+    keeps the exact `<pre><code>` output it has always had, so adding diagram
+    support does not rewrite the HTML of the reports that have none.
+    """
+    body = html.escape("\n".join(code_lines))
+    if lang == "mermaid":
+        return '<pre class="mermaid">' + body + "</pre>"
+    return "<pre><code>" + body + "</code></pre>"
+
+
+def normalize_mermaid(body_html: str) -> str:
+    """Converge both renderer paths on the shape mermaid's initialiser looks for.
+
+    The built-in renderer emits `<pre class="mermaid">` directly. The `markdown`
+    package emits a fenced code block carrying a language class instead, so a
+    host that happens to have it installed would otherwise publish the diagram
+    as literal text (PROTOCOL.md section 10).
+    """
+    return MERMAID_FENCE_RE.sub(
+        lambda m: '<pre class="mermaid">' + m.group(1) + "</pre>", body_html
+    )
+
+
+def mermaid_runtime(body_html: str) -> str:
+    """The mermaid loader, or "" when the report has no diagram.
+
+    The bundle is roughly 3.5 MB uncompressed, so it is injected per page
+    rather than added to the shared template: a report without a diagram must
+    not pay for one. Diagrams are re-drawn on theme toggle because mermaid
+    bakes colours into the SVG at render time.
+    """
+    if 'class="mermaid"' not in body_html:
+        return ""
+    return (
+        '\n<script type="module">\n'
+        'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@'
+        + MERMAID_VERSION
+        + '/dist/mermaid.esm.min.mjs";\n'
+        "(function(){\n"
+        "  var nodes = Array.prototype.slice.call("
+        "document.querySelectorAll('pre.mermaid'));\n"
+        "  if(!nodes.length) return;\n"
+        "  nodes.forEach(function(n){\n"
+        "    n.dataset.src = n.textContent;\n"
+        "    n.style.visibility = 'hidden';\n"
+        "  });\n"
+        "  function effective(){\n"
+        "    var t = document.documentElement.dataset.theme;\n"
+        "    if(t === 'dark' || t === 'light') return t;\n"
+        "    return (window.matchMedia && window.matchMedia("
+        "'(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';\n"
+        "  }\n"
+        "  function draw(){\n"
+        "    mermaid.initialize({startOnLoad:false, securityLevel:'strict',\n"
+        "      theme: effective() === 'dark' ? 'dark' : 'neutral',\n"
+        "      themeVariables:{fontSize:'15px'},\n"
+        "      fontFamily:'\"Noto Sans\", \"Noto Sans KR\", system-ui, sans-serif'});\n"
+        "    nodes.forEach(function(n){\n"
+        "      n.removeAttribute('data-processed');\n"
+        "      n.textContent = n.dataset.src;\n"
+        "    });\n"
+        "    mermaid.run({nodes:nodes}).then(function(){\n"
+        "      nodes.forEach(function(n){ n.style.visibility = 'visible'; });\n"
+        "    });\n"
+        "  }\n"
+        "  draw();\n"
+        "  var btn = document.querySelector('[data-theme-toggle]');\n"
+        "  if(btn) btn.addEventListener('click', function(){"
+        " setTimeout(draw, 0); });\n"
+        "})();\n"
+        "</script>\n"
+    )
+
+
 def minimal_markdown(text: str) -> str:
     """Built-in block renderer used when the `markdown` package is absent.
 
@@ -260,6 +344,7 @@ def minimal_markdown(text: str) -> str:
     buf: list[str] = []
     code_buf: list[str] = []
     in_code = False
+    code_lang = ""
 
     def flush_para():
         nonlocal buf
@@ -273,11 +358,13 @@ def minimal_markdown(text: str) -> str:
         line = lines[i]
         if line.startswith("```"):
             if in_code:
-                out.append("<pre><code>" + html.escape("\n".join(code_buf)) + "</code></pre>")
+                out.append(fenced_block(code_buf, code_lang))
                 code_buf = []
+                code_lang = ""
                 in_code = False
             else:
                 flush_para()
+                code_lang = line[3:].strip().lower()
                 in_code = True
             i += 1
             continue
@@ -379,7 +466,7 @@ def minimal_markdown(text: str) -> str:
         i += 1
     if in_code and code_buf:
         # Unterminated fence: emit what we have instead of dropping it.
-        out.append("<pre><code>" + html.escape("\n".join(code_buf)) + "</code></pre>")
+        out.append(fenced_block(code_buf, code_lang))
     flush_para()
     return "\n".join(out)
 
@@ -592,7 +679,7 @@ def render_one(
     abstract_html_raw = try_markdown(abstract_md) if abstract_md else strings["abstract_default"]
     body_html_raw = try_markdown(body_md)
 
-    body_html, order = rewrite_footnotes(body_html_raw, sources)
+    body_html, order = rewrite_footnotes(normalize_mermaid(body_html_raw), sources)
     abstract_html, order_abs = rewrite_footnotes(abstract_html_raw, sources)
     for sid in order_abs:
         if sid not in order:
@@ -644,7 +731,7 @@ def render_one(
         "DOWNLOAD_LABEL": html.escape(strings["download"]),
         "ABSTRACT_TITLE": html.escape(strings["abstract_title"]),
         "ABSTRACT_HTML": abstract_html,
-        "BODY_HTML": body_html,
+        "BODY_HTML": body_html + mermaid_runtime(body_html),
         "REFERENCES_TITLE": html.escape(strings["references_title"]),
         "REFERENCES_HTML": references_html,
         "FOOTER_TEXT": html.escape(strings["footer_text"].format(date=date_str or "—")),

@@ -63,6 +63,12 @@ collection lane reaches.
   <slug>` passes, commit and push from the site repo without asking. When it
   fails, fix the reported errors and rerun — never disable a check or hand-edit
   rendered HTML.
+- **Reach for a diagram.** A message order, a state machine, a delegation chain
+  or a topology is clearer as a `mermaid` block than as a paragraph, and
+  `PROTOCOL.md` §3 → Draft → Diagrams has the rules: a caption citing what the
+  arrows assert, both languages, no `;` inside a sequence label. Skip it on a
+  brief where nothing has a shape worth drawing; a diagram that adds nothing
+  when deleted was decoration.
 - **Voice is a gate too.** Load the `plain-prose` skill before writing any
   draft and again in the verify lane. A brief assembled from a repeated
   template — the same colon-label under every item, five bullets with the same

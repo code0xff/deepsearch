@@ -314,6 +314,51 @@ def validate_report(site: Path, slug: str) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+MERMAID_BLOCK_RE = re.compile(r"^```mermaid[ \t]*$(.*?)^```[ \t]*$", re.S | re.M)
+
+MERMAID_DIAGRAM_TYPES = (
+    "sequencediagram", "flowchart", "graph", "classdiagram", "statediagram",
+    "erdiagram", "journey", "gantt", "pie", "gitgraph", "mindmap", "timeline",
+    "quadrantchart", "sankey-beta", "xychart-beta", "block-beta", "c4context",
+    "requirementdiagram", "architecture-beta", "packet-beta", "kanban",
+    "radar-beta", "treemap-beta",
+)
+
+
+def check_mermaid_blocks(text: str, rel: str) -> list[str]:
+    """Catch the mermaid mistakes that publish as a visible error box.
+
+    A malformed diagram does not fail the render: the block reaches the page and
+    mermaid paints "Syntax error" where the figure should be, so nothing before
+    this catches it. These are the traps confirmed by rendering, not a parser --
+    a real parse needs the mermaid runtime, so the page still has to be opened
+    once (PROTOCOL.md section 3 -> Draft -> Diagrams).
+    """
+    problems: list[str] = []
+    for n, block in enumerate(MERMAID_BLOCK_RE.findall(text), start=1):
+        lines = [ln for ln in block.splitlines() if ln.strip()]
+        if not lines:
+            problems.append(f"{rel}: mermaid block {n} is empty")
+            continue
+        head = lines[0].strip().lower()
+        if not any(head.startswith(t) for t in MERMAID_DIAGRAM_TYPES):
+            problems.append(
+                f"{rel}: mermaid block {n} starts with {lines[0].strip()!r}, "
+                "which is not a diagram type"
+            )
+            continue
+        if head.startswith("sequencediagram"):
+            for ln in lines[1:]:
+                label = ln.split(":", 1)[1] if ":" in ln else ""
+                if ";" in label:
+                    problems.append(
+                        f"{rel}: mermaid block {n} has ';' in the label "
+                        f"{label.strip()!r} -- ';' ends a statement in a "
+                        "sequence diagram, so the label will not parse"
+                    )
+    return problems
+
+
 def prepublish_check(site: Path, slug: str) -> tuple[list[str], list[str]]:
     errors, warnings = validate_report(site, slug)
     root = report_dir(site, slug)
@@ -346,6 +391,12 @@ def prepublish_check(site: Path, slug: str) -> tuple[list[str], list[str]]:
     for lang in langs:
         idx = output_path(root, lang, primary_lang)
         draft = draft_path(root, lang, primary_lang)
+        if draft.exists():
+            errors.extend(
+                check_mermaid_blocks(
+                    draft.read_text(encoding="utf-8"), draft.name
+                )
+            )
         if idx.exists() and draft.exists():
             if idx.stat().st_mtime < draft.stat().st_mtime:
                 errors.append(
