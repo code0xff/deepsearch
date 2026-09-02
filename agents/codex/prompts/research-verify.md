@@ -69,13 +69,39 @@ incomplete — add it to `gaps.md` and mark this critique item
 - If the topic is new or still moving quickly, are the conclusions
   appropriately scoped instead of written as settled fact?
 
-## 7. Tone and structure
+## 7. Voice
+
+Apply `PROTOCOL.md` §3 → Draft → Voice to every `draft*.md`, each language
+separately. Do the mechanical checks with `grep` rather than from memory:
+
+- **Repeated section formula.** First four words of each paragraph, plus the
+  closing sentence of each subsection. A phrase recurring under more than one
+  item is a template — **must-fix**, remove it everywhere.
+- **Em-dash density.** Count `—` against the paragraph count. More than one per
+  paragraph, or two in one sentence, is a rewrite.
+- **`not X, but Y`.** Count `rather than`, `not … but`, `이 아니라`,
+  `그치지 않고`. Keep at most the one that corrects a real misreading.
+- **Rhyming bullets.** List items that all end in the same grammatical form
+  (`~인지 여부`, `Whether…`) are slot-filling. Vary them.
+- **Parallel-march closer.** A final section restating each item in matched
+  one-liners gets cut to the single thing they add up to.
+- **Announced significance.** `Taken together`, `It is worth noting`,
+  `이를 종합하면`, `결론적으로` — replace with the concrete consequence, or delete.
+- **Mirror translation.** If the Korean and English align sentence for sentence,
+  the Korean was translated rather than written. Rewrite it as Korean prose
+  carrying the same claims and citations.
+
+Structure, in the same pass:
 
 - Is the Abstract faithful to the body?
 - Does the Limitations section honestly reflect `gaps.md` and
   `uncertainties.md`?
-- Any emoji, marketing voice, or hedging? Strip.
+- Any emoji or marketing voice? Strip.
 - Any paragraph longer than ~6 sentences? Split.
+- Do section lengths track importance, or is every item the same size?
+
+Mechanical voice findings are **must-fix**; single-sentence judgment calls are
+**nit**. Citations must survive the rewrite attached to the same claims.
 - For bilingual reports: do the alternate-language drafts say the same
   thing as the primary, or have they drifted?
 

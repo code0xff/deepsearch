@@ -25,11 +25,44 @@ For each paragraph in `draft.md`, list sentences that make a factual assertion w
 ### 4. Missing counter-evidence
 For each major finding, actively search for dissenting views via one more `/research-web` or `/research-papers` sweep targeted at the opposite claim. If counter-evidence exists and is not represented, the draft is incomplete — add it to `gaps.md` and mark this critique item **must-fix**.
 
-### 5. Tone and structure
+### 5. Voice
+Load the `plain-prose` skill and run its revision pass over every
+`draft*.md`, in each language separately. `PROTOCOL.md` §3 → Draft → Voice
+lists the rules this lane enforces; the checks below are the mechanical ones,
+so do them with `grep`, not from memory:
+
+- **Repeated section formula.** Extract the first four words of every paragraph
+  and the last sentence of every subsection. Any phrase appearing under more
+  than one item is a template — classify **must-fix** and remove it everywhere.
+- **Em-dash density.** `grep -o '—' draft.md | wc -l` against the paragraph
+  count. More than one per paragraph, or two in any single sentence, is a
+  rewrite.
+- **`not X, but Y`.** Count occurrences (`rather than`, `not … but`, `이 아니라`,
+  `그치지 않고`). More than one per report: keep the one correcting a real
+  misreading, rewrite the rest as plain assertions.
+- **Rhyming bullets.** Do the list items in "What to watch" / "지켜볼 신호" all
+  end in the same grammatical form? Vary them.
+- **Parallel-march closer.** Does the final section restate each item in matched
+  one-liners? Cut it to the single thing they add up to.
+- **Announced significance.** `Taken together`, `Read together`, `It is worth
+  noting`, `이를 종합하면`, `결론적으로`, `즉` — replace each with the concrete
+  consequence, or delete.
+- **Mirror translation.** Read the Korean and English side by side. If they
+  align sentence for sentence, the Korean was translated rather than written;
+  rewrite it as Korean prose carrying the same claims and citations.
+
+Structure, in the same pass:
 - Is the Abstract faithful to the body?
 - Does the Limitations section honestly reflect `gaps.md`?
-- Any emoji, marketing voice, or hedging? Strip.
+- Any emoji or marketing voice? Strip.
 - Any paragraph longer than ~6 sentences? Split.
+- Do section lengths track importance, or is every item the same size?
+
+Voice findings are **must-fix** when they are mechanical (a repeated template,
+a rhyming bullet list, a parallel-march closer) and **nit** when they are
+judgment calls about a single sentence. Citations and claims must survive the
+rewrite unchanged — moving a `[^sNN]` ref off the sentence it supports is a
+correctness bug, not a style edit.
 
 ### 6. Must-fix vs nit
 Classify each finding as **must-fix** or **nit**. The report does not ship with any must-fix open.

@@ -188,6 +188,40 @@ Minimum sourcing:
   `_(early signal)_` or `_(vendor-stated)_`) and surface the limitation
   honestly.
 
+#### Voice
+
+Prose is held to the same standard as sourcing: a brief that reads like it was
+assembled from a template gets skimmed, and a skimmed brief may as well not have
+shipped. The rules below are enforceable at review time.
+
+- **No repeated section formula.** If a phrase introduces the same slot in more
+  than one section, it is a template — remove it everywhere. A colon-label such
+  as `Why it is not just noise:` under every item is the canonical failure.
+  Make the point where there is a point to make; silence under the obvious
+  items is what marks the others as chosen.
+- **Length follows importance.** Equal-length sections mean nothing was weighed.
+- **At most one em-dash per paragraph**, never two in a sentence. This binds
+  harder in Korean, where the dash is not native punctuation.
+- **`not X, but Y` at most once per report.** As rhythm rather than correction
+  it is the loudest single tell. Korean: `~이 아니라 ~이다`, `단순한 ~이 아니라`.
+- **No parallel-march closer.** Do not end by restating every item in matched
+  one-liners; say the one thing they add up to, or stop on the strongest.
+- **Bullets need not rhyme.** Five list items ending `~인지 여부`, or five
+  opening `Whether…`, is slot-filling. Vary the grammar.
+- **State consequences, not significance.** `Taken together`, `Read together`,
+  `이를 종합하면`, `결론적으로` announce a point instead of making one. Name what
+  breaks, what it costs, or who has to change what.
+- **Vary the hedge prose.** Fixed markers such as `_(vendor-stated)_` are
+  mandated by §3 and stay verbatim, but repeating the same sentence around them
+  turns honest uncertainty into wallpaper the reader stops seeing.
+- **Write each language as itself.** A Korean draft that mirrors the English
+  sentence for sentence carries English rhythm and reads machine-made even when
+  every word is correct. §1.1 governs the artefacts, not the cadence.
+
+Claude Code loads the `plain-prose` skill for the full revision pass, including
+the self-grep that catches repeated openers. Adapters without skill support
+apply the list above directly.
+
 ### Critique
 - Write `working/critique.md`.
 - The report does not ship with open `must-fix` items.
@@ -195,6 +229,11 @@ Minimum sourcing:
   reasoning, source diversity and independence, missing
   counter-evidence, and whether the draft honestly surfaces important
   uncertainties.
+- Critique also enforces the Voice rules above. Mechanical findings — a
+  section formula repeated across items, a rhyming bullet list, a
+  parallel-march closer — are `must-fix`, because each is evidence that a
+  template ran where judgment was supposed to. A voice rewrite must leave
+  every `[^sNN]` attached to the claim it supported.
 
 ### Publish
 - `publish` must pass. It is `validate-report` → `render-report` →

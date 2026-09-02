@@ -63,6 +63,14 @@ collection lane reaches.
   <slug>` passes, commit and push from the site repo without asking. When it
   fails, fix the reported errors and rerun — never disable a check or hand-edit
   rendered HTML.
+- **Voice is a gate too.** Load the `plain-prose` skill before writing any
+  draft and again in the verify lane. A brief assembled from a repeated
+  template — the same colon-label under every item, five bullets with the same
+  ending, a closer that restates each item in turn — gets skimmed, and a
+  skimmed brief may as well not have shipped. The rules are in `PROTOCOL.md`
+  §3 → Draft → Voice, and the mechanical ones are greppable, so check them
+  rather than trusting how the draft reads from the inside. Write the Korean as
+  Korean, not as a sentence-for-sentence mirror of the English.
 - **Touch only the site repo.** The brief's artefacts belong in
   `$DEEPSEARCH_SITE`. Do not commit anything to the harness checkout; if you
   leave scratch files there, delete them before finishing.
